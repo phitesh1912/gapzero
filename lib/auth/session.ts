@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import type { User } from "@prisma/client";
 import { db } from "../db";
@@ -15,12 +16,13 @@ export class AuthError extends Error {
   }
 }
 
-export async function getCurrentUser(): Promise<User> {
+// Cached per request, so the layout and the page share one lookup.
+export const getCurrentUser = cache(async (): Promise<User> => {
   const id = (await cookies()).get(USER_COOKIE)?.value ?? DEFAULT_USER_ID;
   const user = (await db.user.findUnique({ where: { id } })) ?? (await db.user.findUnique({ where: { id: DEFAULT_USER_ID } }));
   if (!user) throw new AuthError("No demo users found. Run `npm run db:seed`.");
   return user;
-}
+});
 
 // Server-side check used by every action and route. Throws; callers turn it into a friendly error.
 export async function requireCapability(capability: Capability): Promise<User> {
