@@ -5,6 +5,7 @@ import { ehrAdapter } from "../adapters/ehr";
 import { extractFax, summarizeCase } from "../ai/features";
 import { EXTRACTION_FIELDS, LOW_CONFIDENCE, REQUIRED_FIELDS, lowConfidenceFields, missingRequired, overallConfidence, type Extraction, type ExtractionField } from "../ai/schemas";
 import { loadRefillContext } from "./context";
+import { ownerFor } from "./view";
 import { createRequest, logEvent, retriage, triageRefill, WorkflowError } from "./workflow";
 
 // Fax / free-text intake (demo step 2): AI extracts → deterministic matching → human confirms
@@ -143,5 +144,6 @@ export async function summarize(refillId: string) {
     daysLeft: typeof ctx.facts?.daysLeft === "number" ? ctx.facts.daysLeft : null,
     isControlled: ctx.isControlled,
     protocolName: ctx.protocol ? `${ctx.protocol.name} v${ctx.protocol.version}` : null,
+    owner: ownerFor(ctx.refill.waitingOn, ctx.refill.patient?.primaryProvider.name ?? null),
   });
 }

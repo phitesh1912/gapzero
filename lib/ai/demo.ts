@@ -182,6 +182,7 @@ export type SummaryInput = {
   daysLeft: number | null;
   isControlled: boolean;
   protocolName: string | null;
+  owner?: string; // who owns the next step, e.g. "Refill nurses"
 };
 
 const BLOCKER_TEXT: Record<string, string> = {

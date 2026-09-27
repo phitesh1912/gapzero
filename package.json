@@ -12,7 +12,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
     "smoke": "node --conditions=react-server --env-file=.env --import tsx scripts/smoke.ts",
-    "ai-check": "node --conditions=react-server --env-file=.env --import tsx scripts/ai-check.ts"
+    "ai-check": "node --conditions=react-server --env-file=.env --import tsx scripts/ai-check.ts",
+    "db:reset-demo": "node --conditions=react-server --env-file=.env --import tsx scripts/reset-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

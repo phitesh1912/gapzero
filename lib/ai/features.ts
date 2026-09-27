@@ -109,7 +109,7 @@ export async function draftRules(plainEnglish: string, userId: string): Promise<
 
 const SUMMARY_SYSTEM = `You write a 2–3 line operational summary of a stuck prescription refill for clinic staff.
 whyStuck: one sentence on what is blocking it, including days of supply left if given.
-suggestedNextStep: one sentence on the next operational step and who owns it.
+suggestedNextStep: one sentence on the next operational step; the owner is the "owner" fact, never guess another team.
 Do not make clinical recommendations (no doses, no diagnoses, no approve/deny advice). Use only the facts given.
 Write plain English for clinic staff: never output internal codes or identifiers (like NEEDS_MATCH or LABS_OVERDUE).`;
 
