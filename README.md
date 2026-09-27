@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GapZero
 
-## Getting Started
+**Patients never run out of medication because of paperwork.**
 
-First, run the development server:
+A refill command center for physician groups. It takes in every stuck refill request (e-prescribing renewals, faxes, portal messages), finds out *why* it's stuck, checks it against the practice's doctor-signed protocols, and hands a nurse or provider a one-screen decision packet. It then handles and verifies the follow-up until the patient has their medication. It also flags refills that will get stuck about 10 days before the patient runs out.
+
+Live demo: https://gapzero-rose.vercel.app (synthetic data only; use the role switcher at the top right).
+
+## What makes it safe
+
+- **Humans make every clinical decision.** Protocols only decide *who* reviews a request (nurse co-sign vs. provider), never the outcome.
+- **Controlled substances always go to a provider.** This is enforced in server code and can't be overridden by protocol data.
+- **AI is advisory.** Extracted fields carry per-field confidence, and low-confidence fields must be confirmed by a person before anything moves. Summaries are labelled "AI-generated".
+- **Protocols are inactive until a provider signs them.** Signed versions are immutable; edits create a new version with a visible diff.
+- **Everything is on the record.** Every state change and every user, system or AI action writes an append-only event.
+- **Role checks run on the server** in every action and route.
+- **The patient tracking page** shows first name, status and next step only.
+
+## Stack
+
+Next.js (App Router) · TypeScript · Tailwind · Prisma · Postgres (Supabase) · Vercel.
+AI runs through a provider adapter: Claude (`ANTHROPIC_API_KEY`), then Groq (`GROQ_API_KEY`), then a deterministic demo mode, so the demo works with no keys.
+
+## Run locally
 
 ```bash
+cp .env.example .env   # add your Supabase DATABASE_URL and DIRECT_URL
+npm install
+npx prisma migrate deploy
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tests
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm test         # unit tests: rules engine, state machine, permissions, guardrails, demo data
+npm run smoke    # runs the full demo script against the database, then resets it
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Where things live
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | What |
+|---|---|
+| `lib/rules/` | Pure protocol rules engine, fact computation, validation, version diff |
+| `lib/refill/stateMachine.ts` | The only code allowed to change a refill's state (validates, updates, logs an event in one transaction) |
+| `lib/refill/triage.ts` | Deterministic routing, including the controlled-substance guardrail |
+| `lib/refill/workflow.ts` | Decisions, pharmacy delivery with retries and escalation, fill verification |
+| `lib/auth/permissions.ts` | Role matrix and decision rules |
+| `lib/ai/` | Provider adapter, schemas, demo-mode fallbacks |
+| `lib/adapters/` | Mocked EHR, pharmacy and SMS integrations |
