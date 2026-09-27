@@ -219,7 +219,7 @@ export const PATIENTS: PatientSpec[] = [
   },
   {
     first: "Grace", last: "Thompson", dob: "1985-12-02", visitDaysAgo: 120,
-    rx: [{ med: "SERTRALINE", daysLeft: 5, refills: 0, requests: [{ source: "PORTAL", ageDays: 1, expect: "READY_FOR_PROVIDER" }] }],
+    rx: [{ med: "SERTRALINE", daysLeft: 5, refills: 0, pharmacy: "phm_caremart", requests: [{ source: "PORTAL", ageDays: 1, expect: "READY_FOR_PROVIDER" }] }],
   },
   {
     first: "Henry", last: "Wilson", dob: "1958-07-22", visitDaysAgo: 80, labs: { BMP: 80 },
