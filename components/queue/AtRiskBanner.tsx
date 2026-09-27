@@ -2,13 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarClock, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { createProactiveAction } from "@/app/actions/refills";
 import type { AtRiskItem } from "@/lib/refill/queries";
-import { Button } from "../ui";
+import { PatientAvatar } from "../Avatar";
 
 export function AtRiskBanner({ items, canCreate }: { items: AtRiskItem[]; canCreate: boolean }) {
-  const [open, setOpen] = useState(true);
   const [pending, start] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,40 +28,41 @@ export function AtRiskBanner({ items, canCreate }: { items: AtRiskItem[]; canCre
   };
 
   return (
-    <section className="rounded-lg border border-amber-200 bg-amber-50" aria-label="Refills at risk">
-      <button className="flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <CalendarClock className="size-5 text-amber-700" aria-hidden />
+    <section className="overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-amber-50 to-orange-50" aria-label="Refills at risk">
+      <div className="flex flex-wrap items-start gap-3 px-5 pt-4 pb-3">
+        <span className="grid size-9 place-items-center rounded-lg bg-amber-500 text-white shadow-sm">
+          <ShieldCheck className="size-5" aria-hidden />
+        </span>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-amber-900">
-            {soon > 0 ? `${soon} ${soon === 1 ? "patient" : "patients"} will run out this week` : `${items.length} refills at risk`}
-            {soon !== items.length && soon > 0 ? ` · ${items.length} in the next 10 days` : ""}
+          <p className="text-[11px] font-semibold tracking-wider text-amber-700 uppercase">Prevention</p>
+          <p className="text-base font-semibold text-amber-950">
+            {soon > 0 ? `${soon} ${soon === 1 ? "patient" : "patients"} will run out this week` : `${items.length} refills at risk`} and nobody has asked yet
           </p>
-          <p className="text-xs text-amber-800">These refills will get stuck (no refills left, or visit/labs overdue) and nobody has asked yet. Start them now.</p>
+          <p className="mt-0.5 text-sm text-amber-900/80">Each one will get stuck: no refills left, or a visit or lab is overdue. Starting them now avoids the gap.</p>
         </div>
-        {open ? <ChevronUp className="size-4 text-amber-800" /> : <ChevronDown className="size-4 text-amber-800" />}
-      </button>
-      {open && (
-        <ul className="divide-y divide-amber-200 border-t border-amber-200">
-          {items.map((i) => (
-            <li key={i.prescriptionId} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-              <div className="min-w-48 flex-1">
-                <p className="text-sm font-medium text-foreground">{i.patientName}</p>
-                {i.medication && <p className="text-xs text-muted">{i.medication}</p>}
-              </div>
-              <span className="text-sm font-medium text-amber-900">
-                {i.daysLeft <= 0 ? "Out now" : `Runs out in ${i.daysLeft} day${i.daysLeft === 1 ? "" : "s"}`}
-              </span>
-              <span className="text-xs text-muted">{i.reasons.join(" · ")}</span>
-              {canCreate && (
-                <Button size="sm" variant="primary" disabled={pending} onClick={() => create(i.prescriptionId)}>
-                  {busyId === i.prescriptionId ? "Starting…" : "Start refill"}
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {error && <p className="border-t border-amber-200 px-4 py-2 text-sm text-red-700">{error}</p>}
+      </div>
+      <ul className="grid gap-2 px-5 pb-4 md:grid-cols-3">
+        {items.map((i) => (
+          <li key={i.prescriptionId} className="flex items-center gap-3 rounded-lg bg-white/80 p-3 ring-1 ring-amber-200/70">
+            <PatientAvatar name={i.patientName} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{i.patientName}</p>
+              <p className="truncate text-xs text-muted">{[i.medication, ...i.reasons].filter(Boolean).join(" · ")}</p>
+              <p className="mt-0.5 text-xs font-semibold text-amber-800">{i.daysLeft <= 0 ? "Out now" : `Runs out in ${i.daysLeft} day${i.daysLeft === 1 ? "" : "s"}`}</p>
+            </div>
+            {canCreate && (
+              <button
+                disabled={pending}
+                onClick={() => create(i.prescriptionId)}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+              >
+                {busyId === i.prescriptionId ? "Starting…" : "Start"} <ArrowRight className="size-3.5" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {error && <p className="border-t border-amber-200 px-5 py-2 text-sm text-red-700">{error}</p>}
     </section>
   );
 }

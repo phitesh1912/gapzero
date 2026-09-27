@@ -5,9 +5,11 @@ import { can } from "../auth/permissions";
 import { computeFacts } from "../rules/facts";
 import { isVisitOverdue, overdueLab } from "./blockers";
 import { loadRefillContext } from "./context";
+import { explain } from "./explain";
+import { extractionSchema, missingRequired, type ExtractionField } from "../ai/schemas";
 import { OPEN_STATES } from "./states";
 import { compareQueue, daysLeft, isAtRisk } from "./supply";
-import { STATE_LABELS, ownerFor, redactRow, withUrgency, type QueueRow, type QueueRowFull } from "./view";
+import { STATE_LABELS, needsRole, ownerFor, redactRow, withUrgency, type QueueRow, type QueueRowFull } from "./view";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -27,6 +29,7 @@ export async function getQueue(user: User, filters: QueueFilters = {}): Promise<
     },
   });
 
+  const since = await lastStateChange(refills.map((r) => r.id));
   const rows: QueueRowFull[] = refills.map((r) => {
     const rx = r.prescription;
     const left = rx ? daysLeft(rx, today) : null;
@@ -46,11 +49,44 @@ export async function getQueue(user: User, filters: QueueFilters = {}): Promise<
       runOutDate: rx ? new Date(rx.lastFillAt.getTime() + rx.daysSupply * DAY) : null,
       urgency: withUrgency(left),
       hasAiSummary: !!r.aiSummary,
+      daysSupply: rx?.daysSupply ?? null,
+      stateSince: since.get(r.id) ?? r.createdAt,
+      stuckMs: today.getTime() - (since.get(r.id) ?? r.createdAt).getTime(),
+      needsMe: needsRole(user.role, r),
     };
   });
 
   rows.sort(compareQueue);
   return rows.map((row) => redactRow(user.role, row));
+}
+
+// When each refill entered its current state (latest state-changing event).
+async function lastStateChange(ids: string[]): Promise<Map<string, Date>> {
+  if (!ids.length) return new Map();
+  const rows = await db.event.groupBy({
+    by: ["refillRequestId"],
+    where: { refillRequestId: { in: ids }, type: { in: ["STATE_CHANGED", "REQUEST_RECEIVED"] } },
+    _max: { createdAt: true },
+  });
+  return new Map(rows.filter((r) => r.refillRequestId && r._max.createdAt).map((r) => [r.refillRequestId!, r._max.createdAt!]));
+}
+
+// Counts for the sidebar and KPI strip.
+export async function getQueueStats(user: User) {
+  const today = new Date();
+  const open = await db.refillRequest.findMany({
+    where: { state: { in: [...OPEN_STATES] } },
+    select: { state: true, waitingOn: true, createdAt: true, prescription: { select: { daysSupply: true, lastFillAt: true } } },
+  });
+  const lefts = open.map((r) => (r.prescription ? daysLeft(r.prescription, today) : null));
+  return {
+    open: open.length,
+    needsMe: open.filter((r) => needsRole(user.role, r)).length,
+    outOfMeds: lefts.filter((l) => l !== null && l <= 0).length,
+    gapDays: lefts.reduce<number>((sum, l) => sum + (l !== null && l < 0 ? -l : 0), 0),
+    runningOut: lefts.filter((l) => l !== null && l > 0 && l <= 7).length,
+    oldestMs: open.length ? Math.max(...open.map((r) => today.getTime() - r.createdAt.getTime())) : 0,
+  };
 }
 
 export type AtRiskItem = {
@@ -119,14 +155,32 @@ export async function getPacket(user: User, refillId: string) {
   const userName = new Map(users.map((u) => [u.id, u.name]));
 
   const rx = refill.prescription;
-  const left = rx ? daysLeft(rx, today) : null;
+  const resolved = refill.state === "CLOSED" || refill.state === "FILLED" || refill.state === "DENIED";
+  const left = rx && !resolved ? daysLeft(rx, today) : null;
   const clinical = can(user.role, "VIEW_CLINICAL");
+  const owner = ownerFor(refill.waitingOn, refill.patient?.primaryProvider.name ?? null);
+  const erx = messages.filter((m) => m.channel === "ERX").at(-1) ?? null;
+  const parsedExtraction = extractionSchema.safeParse(refill.extracted);
+  const stateEvents = events.filter((e) => e.type === "STATE_CHANGED" || e.type === "REQUEST_RECEIVED");
+  const explanation = explain({
+    state: refill.state,
+    blockers: clinical ? ctx.blockers : [],
+    failedChecks: clinical ? (ctx.protocol?.evaluation.results.filter((r) => !r.passed).map((r) => r.label) ?? []) : [],
+    missingFields: parsedExtraction.success ? missingRequired(parsedExtraction.data).map(fieldLabel) : [],
+    owner,
+    isControlled: clinical && ctx.isControlled,
+    protocolName: ctx.protocol ? `${ctx.protocol.name} v${ctx.protocol.version}` : null,
+    pharmacyName: rx?.pharmacy?.name ?? null,
+    erx: erx && { status: erx.status, attempts: erx.attempts, lastError: erx.lastError },
+  });
 
   const base = {
     id: refill.id,
     state: refill.state,
     waitingOn: refill.waitingOn,
-    owner: ownerFor(refill.waitingOn, refill.patient?.primaryProvider.name ?? null),
+    owner,
+    explanation,
+    stateSince: stateEvents.at(-1)?.createdAt ?? refill.createdAt,
     source: refill.source,
     createdAt: refill.createdAt,
     trackingToken: refill.trackingToken,
@@ -137,7 +191,7 @@ export async function getPacket(user: User, refillId: string) {
     },
     daysLeft: left,
     urgency: withUrgency(left),
-    runOutDate: rx ? new Date(rx.lastFillAt.getTime() + rx.daysSupply * DAY) : null,
+    runOutDate: rx && !resolved ? new Date(rx.lastFillAt.getTime() + rx.daysSupply * DAY) : null,
     pharmacy: rx?.pharmacy ? { name: rx.pharmacy.name, status: rx.pharmacy.status } : null,
     events: events.map((e) => ({
       id: e.id,
@@ -181,7 +235,7 @@ export async function getPacket(user: User, refillId: string) {
         .slice()
         .sort((a, b) => b.resultedAt.getTime() - a.resultedAt.getTime())
         .map((l) => ({ testCode: l.testCode, value: l.value, unit: l.unit, resultedAt: l.resultedAt })),
-      blockers: ctx.blockers,
+      blockers: resolved ? [] : ctx.blockers,
       isControlled: ctx.isControlled,
       protocol: ctx.protocol && {
         id: ctx.protocol.id,
@@ -209,4 +263,8 @@ function neutralReason(type: string, toState: RefillState | null): string {
   if (type === "STATE_CHANGED" && toState) return `Status changed to ${STATE_LABELS[toState].toLowerCase()}.`;
   if (type === "REQUEST_RECEIVED") return "Refill request received.";
   return type.charAt(0) + type.slice(1).toLowerCase().replace(/_/g, " ") + ".";
+}
+
+function fieldLabel(f: ExtractionField): string {
+  return { patientName: "patient name", dob: "date of birth", medication: "medication", strength: "strength", quantity: "quantity", daysSupply: "days supply", sig: "directions", pharmacy: "pharmacy", prescriber: "prescriber" }[f];
 }

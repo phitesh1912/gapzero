@@ -17,6 +17,10 @@ const row: QueueRowFull = {
   runOutDate: new Date(),
   urgency: { level: "red", label: "1 day left" },
   hasAiSummary: false,
+  daysSupply: 30,
+  stateSince: new Date(),
+  stuckMs: 0,
+  needsMe: false,
 };
 
 describe("redactRow", () => {

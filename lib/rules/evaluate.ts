@@ -19,6 +19,7 @@ export function evaluate(rules: ProtocolRules, facts: Facts): Evaluation {
   const drugClass = facts.drugClass;
   results.push({
     label: "Drug class covered by protocol",
+    fact: "drugClass",
     passed: typeof drugClass === "string" && rules.appliesTo.drugClasses.includes(drugClass),
     actual: drugClass ?? null,
     expected: `one of ${rules.appliesTo.drugClasses.join(", ")}`,
@@ -31,6 +32,7 @@ export function evaluate(rules: ProtocolRules, facts: Facts): Evaluation {
   const requested = facts.requestedDaysSupply;
   results.push({
     label: `Days supply within ${rules.maxDaysSupply}`,
+    fact: "requestedDaysSupply",
     passed: typeof requested === "number" && requested <= rules.maxDaysSupply,
     actual: requested ?? null,
     expected: `<= ${rules.maxDaysSupply}`,
@@ -42,6 +44,7 @@ export function evaluate(rules: ProtocolRules, facts: Facts): Evaluation {
 function checkCondition(c: Condition, actual: FactValue): CheckResult {
   return {
     label: c.label,
+    fact: c.fact,
     passed: compare(actual, c.op, c.value),
     actual,
     expected: `${c.op} ${String(c.value)}`,

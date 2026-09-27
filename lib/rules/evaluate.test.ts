@@ -33,7 +33,7 @@ describe("evaluate", () => {
     const r = evaluate(hypertension, { ...goodFacts, "daysSinceLab:BMP": 400 });
     expect(r.eligible).toBe(false);
     const failed = r.results.filter((c) => !c.passed);
-    expect(failed).toEqual([{ label: "BMP within 12 months", passed: false, actual: 400, expected: "<= 365" }]);
+    expect(failed).toEqual([{ label: "BMP within 12 months", fact: "daysSinceLab:BMP", passed: false, actual: 400, expected: "<= 365" }]);
   });
 
   it("fails a check when the fact is missing (no lab on record)", () => {

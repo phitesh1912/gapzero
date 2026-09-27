@@ -24,6 +24,7 @@ export type Facts = Record<string, FactValue>;
 
 export type CheckResult = {
   label: string;
+  fact?: string;
   passed: boolean;
   actual: FactValue;
   expected: string;

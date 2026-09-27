@@ -23,3 +23,7 @@ export function countBy<T>(items: T[], key: (t: T) => string | string[]): Record
   }
   return out;
 }
+
+// Assumption for the staff-time estimate shown on Ops: minutes of phone/fax/chart work a manual
+// refill chase takes that GapZero removes. Shown next to the number so nobody mistakes it for a measurement.
+export const MINUTES_SAVED_PER_REFILL = 12;

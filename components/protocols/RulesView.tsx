@@ -1,12 +1,12 @@
 import type { ProtocolRules } from "@/lib/rules/types";
-import { titleCase } from "@/lib/format";
+import { classLabel } from "@/lib/rules/catalog";
 
 export function RulesView({ rules }: { rules: ProtocolRules }) {
   return (
     <div className="space-y-2 text-xs">
       <p>
         <span className="text-muted">Applies to: </span>
-        {rules.appliesTo.drugClasses.map(titleCase).join(", ")}
+        {rules.appliesTo.drugClasses.map(classLabel).join(", ")}
       </p>
       <ul className="list-disc space-y-0.5 pl-4">
         {rules.conditions.map((c, i) => (

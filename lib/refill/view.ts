@@ -20,6 +20,10 @@ export type QueueRowFull = {
   runOutDate: Date | null; // "due": when the patient runs out
   urgency: Urgency | null;
   hasAiSummary: boolean;
+  daysSupply: number | null;
+  stateSince: Date; // when it entered its current state
+  stuckMs: number; // how long it has been in that state, computed on the server
+  needsMe: boolean;
 };
 
 // FRONT_DESK and ADMIN see name/status/waiting-on/due only: no medication or clinical blockers.
@@ -28,6 +32,20 @@ export type QueueRow = Omit<QueueRowFull, "isControlled"> & { isControlled: bool
 export function redactRow(role: Role, row: QueueRowFull): QueueRow {
   if (can(role, "VIEW_CLINICAL")) return { ...row, redacted: false };
   return { ...row, medication: null, blockers: [], isControlled: null, drugClass: null, hasAiSummary: false, redacted: true };
+}
+
+// What counts as "my work" for each role.
+export function needsRole(role: Role, row: { waitingOn: WaitingOn; state: RefillState }): boolean {
+  switch (role) {
+    case "PROVIDER":
+      return row.waitingOn === "PROVIDER";
+    case "NURSE":
+      return row.waitingOn === "NURSE";
+    case "FRONT_DESK":
+      return row.state === "WAITING_VISIT";
+    case "ADMIN":
+      return row.state === "SEND_FAILED";
+  }
 }
 
 const OWNER_LABEL: Record<WaitingOn, string> = {

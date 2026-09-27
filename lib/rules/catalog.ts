@@ -18,6 +18,20 @@ export const FACTS: FactDef[] = [
 
 export const DRUG_CLASSES = ["ACE_INHIBITOR", "ARB", "CCB", "THIAZIDE", "BIGUANIDE", "STATIN", "THYROID", "SSRI", "STIMULANT"] as const;
 
+export const CLASS_LABELS: Record<string, string> = {
+  ACE_INHIBITOR: "ACE inhibitors",
+  ARB: "ARBs",
+  CCB: "Calcium channel blockers",
+  THIAZIDE: "Thiazides",
+  BIGUANIDE: "Metformin (biguanide)",
+  STATIN: "Statins",
+  THYROID: "Thyroid",
+  SSRI: "SSRIs",
+  STIMULANT: "Stimulants (controlled)",
+};
+
+export const classLabel = (c: string) => CLASS_LABELS[c] ?? c;
+
 const FACT_MAP = new Map(FACTS.map((f) => [f.key, f]));
 
 export function factDef(key: string): FactDef | undefined {

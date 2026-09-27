@@ -4,9 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { PenLine, Plus, Sparkles, Trash2 } from "lucide-react";
 import { discardDraftAction, draftRulesAction, saveDraftAction, signProtocolAction } from "@/app/actions/protocols";
-import { DRUG_CLASSES, FACTS, factDef } from "@/lib/rules/catalog";
+import { DRUG_CLASSES, FACTS, classLabel, factDef } from "@/lib/rules/catalog";
 import { OPS, type Condition, type ProtocolRules } from "@/lib/rules/types";
-import { titleCase } from "@/lib/format";
 import { Badge, Button, Card, CardHeader } from "../ui";
 
 type Props = {
@@ -136,7 +135,7 @@ export function ProtocolEditor({ protocolKey, initial, draft, nextVersion, canSi
                       className={`rounded-full px-2.5 py-1 text-xs ring-1 ring-inset ${on ? "bg-accent-soft text-accent ring-teal-300" : "text-muted ring-border hover:text-foreground"}`}
                       aria-pressed={on}
                     >
-                      {titleCase(c)}
+                      {classLabel(c)}
                     </button>
                   );
                 })}

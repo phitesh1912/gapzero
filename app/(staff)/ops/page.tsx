@@ -5,7 +5,7 @@ import type { RefillState } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { getOpsMetrics } from "@/lib/ops/metrics";
-import { formatDuration } from "@/lib/ops/stats";
+import { formatDuration, MINUTES_SAVED_PER_REFILL } from "@/lib/ops/stats";
 import { BLOCKER_LABELS, type Blocker } from "@/lib/refill/blockers";
 import { STATE_LABELS } from "@/lib/refill/view";
 import { formatDateTime, timeAgo, titleCase } from "@/lib/format";
@@ -30,6 +30,16 @@ export default async function OpsPage() {
         </div>
         <OpsControls />
       </div>
+
+      <section className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white">
+        <p className="text-[11px] font-semibold tracking-wider text-teal-300 uppercase">Value delivered</p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Value value={String(m.value.filled)} label="Refills resolved and verified filled" />
+          <Value value={m.value.nurseShare === null ? "—" : `${Math.round(m.value.nurseShare * 100)}%`} label="Approvals handled by nurses via signed protocol" />
+          <Value value={String(m.value.proactive)} label="Refills started before they got stuck" />
+          <Value value={`${(m.value.minutesSaved / 60).toFixed(1)}h`} label={`Staff time saved (est. ${MINUTES_SAVED_PER_REFILL} min per refill vs. a manual chase)`} />
+        </div>
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Gap days right now" value={m.totalGapDays} tone={m.totalGapDays > 0 ? "red" : "neutral"} hint={`${m.outOfMedsCount} patients out of medication`} />
@@ -102,6 +112,7 @@ export default async function OpsPage() {
 
       <Card>
         <CardHeader title="Recent system activity" subtitle="Event log metadata" />
+        {m.recentEvents.length === 0 && <EmptyState title="No escalations, outages or blocked actions yet" />}
         <ul className="divide-y divide-border">
           {m.recentEvents.map((e) => (
             <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-sm">
@@ -113,6 +124,15 @@ export default async function OpsPage() {
           ))}
         </ul>
       </Card>
+    </div>
+  );
+}
+
+function Value({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+      <p className="mt-1 text-xs leading-snug text-slate-400">{label}</p>
     </div>
   );
 }

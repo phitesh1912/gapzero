@@ -39,7 +39,7 @@ export function ProtocolChecks({ protocol, isControlled }: { protocol: Protocol;
               {r.hardCoded && <span className="ml-2 text-xs text-muted">(hard-coded guardrail)</span>}
             </span>
             <span className="text-right text-xs text-muted">
-              actual <span className="font-mono text-foreground">{formatActual(r.label, r.actual)}</span>
+              actual <span className="font-mono text-foreground">{formatActual(r.fact, r.actual)}</span>
               {" · "}needs <span className="font-mono">{r.expected}</span>
             </span>
           </li>
@@ -52,8 +52,9 @@ export function ProtocolChecks({ protocol, isControlled }: { protocol: Protocol;
   );
 }
 
-function formatActual(label: string, v: unknown): string {
+function formatActual(fact: string | undefined, v: unknown): string {
   if (v === null || v === undefined) return "none on record";
-  if (typeof v === "number" && /within|Seen/.test(label)) return `${v} days ago`;
+  if (typeof v === "number" && (fact?.startsWith("daysSince") ?? false)) return `${v} days ago`;
+  if (typeof v === "number" && fact === "requestedDaysSupply") return `${v} days`;
   return String(v);
 }

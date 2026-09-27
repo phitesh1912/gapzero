@@ -1,5 +1,6 @@
 import type { Packet } from "@/lib/refill/queries";
 import { daysAgoLabel, formatDate, titleCase } from "@/lib/format";
+import { classLabel } from "@/lib/rules/catalog";
 import { Card, CardHeader, Field } from "../ui";
 
 type Clinical = NonNullable<Packet["clinical"]>;
@@ -15,7 +16,7 @@ export function ClinicalDetails({ clinical }: { clinical: Clinical }) {
         {rx ? (
           <dl className="grid grid-cols-2 gap-3 p-4">
             <Field label="Medication">{rx.medication}</Field>
-            <Field label="Class">{titleCase(rx.drugClass)}{rx.isControlled ? ` · ${rx.schedule}` : ""}</Field>
+            <Field label="Class">{classLabel(rx.drugClass)}{rx.isControlled ? ` · ${rx.schedule}` : ""}</Field>
             <Field label="Days supply">{rx.daysSupply} days (qty {rx.quantity})</Field>
             <Field label="Refills left">{rx.refillsRemaining}</Field>
             <Field label="Last filled">{formatDate(rx.lastFillAt)}</Field>

@@ -5,18 +5,20 @@ import { ArrowLeft, ExternalLink, ShieldAlert } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { getPacket } from "@/lib/refill/queries";
-import { waitingOnLabel } from "@/lib/refill/view";
-import { formatDate } from "@/lib/format";
-import { BlockerBadge, StateBadge, UrgencyBadge } from "@/components/badges";
+import { extractionSchema } from "@/lib/ai/schemas";
+import { findCandidates } from "@/lib/refill/intake";
+import { formatDate, titleCase } from "@/lib/format";
+import { UrgencyBadge } from "@/components/badges";
 import { Card, CardHeader } from "@/components/ui";
+import { PatientAvatar } from "@/components/Avatar";
 import { Timeline } from "@/components/refill/Timeline";
 import { ProtocolChecks } from "@/components/refill/ProtocolChecks";
 import { ClinicalDetails } from "@/components/refill/ClinicalDetails";
 import { ActionPanel } from "@/components/refill/ActionPanel";
 import { RequestDetails } from "@/components/refill/RequestDetails";
+import { JourneyTracker } from "@/components/refill/JourneyTracker";
+import { StatePanel } from "@/components/refill/StatePanel";
 import { MatchReview } from "@/components/intake/MatchReview";
-import { extractionSchema } from "@/lib/ai/schemas";
-import { findCandidates } from "@/lib/refill/intake";
 
 export const metadata: Metadata = { title: "Refill request" };
 
@@ -32,78 +34,74 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
   return (
     <div className="space-y-5">
       <Link href="/queue" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
-        <ArrowLeft className="size-4" /> Queue
+        <ArrowLeft className="size-4" /> Refill queue
       </Link>
 
-      {/* Header: who, what, and the four things every refill always shows. */}
-      <Card className="p-5">
+      <Card className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-semibold">{packet.patient?.name ?? "Unmatched request"}</h1>
-            {c?.prescription && (
-              <p className="mt-1 text-sm text-muted">
-                {c.prescription.medication} · {c.prescription.sig}
-              </p>
-            )}
-            {c?.patient && (
+          <div className="flex items-start gap-4">
+            {packet.patient ? <PatientAvatar name={packet.patient.name} /> : <span className="grid size-9 place-items-center rounded-full bg-amber-100 font-semibold text-amber-800">?</span>}
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">{packet.patient?.name ?? "Unmatched request"}</h1>
+              {c?.prescription && (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-foreground">
+                  {c.isControlled && <ShieldAlert className="size-4 text-red-600" aria-label="Controlled substance" />}
+                  <span className="font-medium">{c.prescription.medication}</span>
+                  <span className="text-muted">· {c.prescription.sig}</span>
+                </p>
+              )}
               <p className="mt-1 text-xs text-muted">
-                {c.patient.mrn} · DOB {formatDate(c.patient.dob)} · PCP {c.patient.provider}
+                {c?.patient ? `${c.patient.mrn} · DOB ${formatDate(c.patient.dob)} · PCP ${c.patient.provider} · ` : ""}
+                via {titleCase(packet.source)}
               </p>
-            )}
+            </div>
           </div>
-          <UrgencyBadge urgency={packet.urgency} />
+          <div className="text-right">
+            {packet.urgency ? <UrgencyBadge urgency={packet.urgency} /> : null}
+            {packet.runOutDate && <p className="mt-1.5 text-xs text-muted">{(packet.daysLeft ?? 0) <= 0 ? "Ran out" : "Runs out"} {formatDate(packet.runOutDate)}</p>}
+          </div>
         </div>
-        <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 md:grid-cols-4">
-          <Four label="Current state"><StateBadge state={packet.state} /></Four>
-          <Four label="Waiting on">{waitingOnLabel(packet.waitingOn)}</Four>
-          <Four label="Next step owner">{packet.owner}</Four>
-          <Four label="Due (runs out)">{packet.runOutDate ? formatDate(packet.runOutDate) : "Unknown until matched"}</Four>
-        </dl>
+        <div className="mt-6 border-t border-border pt-5">
+          <JourneyTracker state={packet.state} owner={packet.owner} since={packet.stateSince} />
+        </div>
       </Card>
 
-      {c?.isControlled && (
-        <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="note">
+      {c?.isControlled && !packet.explanation.resolved && (
+        <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900" role="note">
           <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
           <div>
             <p className="font-semibold">Controlled substance ({c.prescription?.schedule ?? "scheduled"}): provider review required</p>
-            <p className="mt-0.5">
-              The fast path is off. Nurses can&apos;t co-sign this, and no protocol can change that. The rule is enforced in code on the server, not in protocol data.
-            </p>
+            <p className="mt-0.5">Nurses can&apos;t co-sign this and no protocol can change that. The rule is enforced in server code, not in protocol data.</p>
           </div>
         </div>
       )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
+          <StatePanel e={packet.explanation} />
+          {extraction?.success && <MatchReview refillId={packet.id} extraction={extraction.data} candidates={candidates} />}
           {c ? (
             <>
-              {extraction?.success && <MatchReview refillId={packet.id} extraction={extraction.data} candidates={candidates} />}
-              <Card>
-                <CardHeader title="Why it's stuck" subtitle="Blockers found by deterministic checks" />
-                <div className="flex flex-wrap gap-2 p-4">
-                  {c.blockers.length ? c.blockers.map((b) => <BlockerBadge key={b} code={b} />) : <span className="text-sm text-muted">No blockers.</span>}
-                </div>
-              </Card>
-              <ProtocolChecks protocol={c.protocol} isControlled={c.isControlled} />
               <RequestDetails packet={packet} />
+              {!packet.explanation.resolved && <ProtocolChecks protocol={c.protocol} isControlled={c.isControlled} />}
               <ClinicalDetails clinical={c} />
             </>
           ) : (
-            <Card className="p-5 text-sm text-muted">
-              Clinical details (medication, labs, protocol checks) are only visible to nurses and providers.
-            </Card>
+            <Card className="p-5 text-sm text-muted">Clinical details (medication, labs, protocol checks) are only visible to nurses and providers.</Card>
           )}
         </div>
 
         <div className="space-y-5">
-          <ActionPanel packet={packet} role={user.role} canViewClinical={can(user.role, "VIEW_CLINICAL")} />
+          <div className="lg:sticky lg:top-6">
+            <ActionPanel packet={packet} role={user.role} canViewClinical={can(user.role, "VIEW_CLINICAL")} />
+          </div>
           <Card>
             <CardHeader
               title="Timeline"
               subtitle="Every action, who did it, and why"
               action={
                 packet.patient && (
-                  <Link href={`/track/${packet.trackingToken}`} target="_blank" className="inline-flex items-center gap-1 text-xs text-accent hover:underline">
+                  <Link href={`/track/${packet.trackingToken}`} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent hover:bg-teal-100">
                     Patient view <ExternalLink className="size-3" />
                   </Link>
                 )
@@ -113,15 +111,6 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
           </Card>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Four({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted">{label}</dt>
-      <dd className="mt-1 text-sm font-medium">{children}</dd>
     </div>
   );
 }
