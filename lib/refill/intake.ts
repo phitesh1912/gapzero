@@ -3,7 +3,7 @@ import type { Prisma, User } from "@prisma/client";
 import { db } from "../db";
 import { ehrAdapter } from "../adapters/ehr";
 import { extractFax, summarizeCase } from "../ai/features";
-import { EXTRACTION_FIELDS, LOW_CONFIDENCE, lowConfidenceFields, missingRequired, overallConfidence, type Extraction, type ExtractionField } from "../ai/schemas";
+import { EXTRACTION_FIELDS, LOW_CONFIDENCE, REQUIRED_FIELDS, lowConfidenceFields, missingRequired, overallConfidence, type Extraction, type ExtractionField } from "../ai/schemas";
 import { loadRefillContext } from "./context";
 import { createRequest, logEvent, retriage, triageRefill, WorkflowError } from "./workflow";
 
@@ -53,7 +53,8 @@ export async function intakeFax(user: User, text: string) {
   const identityConfident = (["patientName", "dob"] as const).every((f) => extraction[f].value && extraction[f].confidence >= LOW_CONFIDENCE);
   const candidates = identityConfident ? await findCandidates(extraction) : [];
   const rx = candidates.length === 1 ? candidates[0].prescriptions.filter((p) => p.suggested) : [];
-  const clean = lowConfidenceFields(extraction).length === 0 && missingRequired(extraction).length === 0;
+  // Only identity and required fields block auto-matching; other low-confidence fields stay flagged in the packet.
+  const clean = lowConfidenceFields(extraction).every((f) => !REQUIRED_FIELDS.includes(f)) && missingRequired(extraction).length === 0;
 
   if (identityConfident && clean && candidates.length === 1 && rx.length === 1) {
     await db.refillRequest.update({

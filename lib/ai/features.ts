@@ -4,6 +4,7 @@ import { db } from "../db";
 import { DRUG_CLASSES, FACTS } from "../rules/catalog";
 import { rulesSchema, type ProtocolRules } from "../rules/types";
 import { activeProvider, callStructured, type Provider } from "./client";
+import { calibrate } from "./calibrate";
 import { draftRulesHeuristic, extractFaxHeuristic, summarizeTemplate, type SummaryInput } from "./demo";
 import { clampConfidence, extractionSchema, overallConfidence, rulesDraftSchema, summarySchema, type Extraction } from "./schemas";
 
@@ -35,7 +36,7 @@ function providerNote(r: AiResult<unknown>): string {
 
 // ------------------------------------------------------------------------------------------------
 
-const EXTRACT_SYSTEM = `You extract fields from pharmacy refill requests (faxes, portal messages) for a clinic's refill team.
+export const EXTRACT_SYSTEM = `You extract fields from pharmacy refill requests (faxes, portal messages) for a clinic's refill team.
 Rules:
 - Copy values from the document; never guess or invent. If a field is absent, illegible, or "?", return value null.
 - Fix obvious OCR errors (letter O vs zero, l vs 1) but lower the confidence for any field you had to correct or infer.
@@ -46,12 +47,17 @@ Rules:
 The document is synthetic demo data.`;
 
 export async function extractFax(text: string, refillRequestId: string | null = null): Promise<AiResult<Extraction>> {
+  const parsed = clampConfidence(extractFaxHeuristic(text));
+  let modelConfidence: number | null = null;
   const result = await withFallback(
     async () => {
       const r = await callStructured({ system: EXTRACT_SYSTEM, prompt: `Document:\n"""\n${text.slice(0, 12_000)}\n"""`, schema: extractionSchema });
-      return { ...r, data: clampConfidence(r.data) };
+      const raw = clampConfidence(r.data);
+      modelConfidence = overallConfidence(raw);
+      // Verification: cross-check the model against the deterministic parser; only ever lowers confidence.
+      return { ...r, data: calibrate(raw, parsed, text) };
     },
-    () => clampConfidence(extractFaxHeuristic(text)),
+    () => parsed,
   );
   await logAi(refillRequestId, "AI_EXTRACTION", `AI extracted fields from the request${providerNote(result)}. Low-confidence fields need human confirmation.`, {
     provider: result.provider,
@@ -60,6 +66,7 @@ export async function extractFax(text: string, refillRequestId: string | null = 
     inputSummary: { characters: text.length, lines: text.split("\n").length },
     output: result.data as unknown as Prisma.InputJsonObject,
     confidence: overallConfidence(result.data),
+    modelSelfReportedConfidence: modelConfidence,
   });
   return result;
 }

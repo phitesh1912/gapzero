@@ -16,7 +16,7 @@ export function activeProvider(): Provider {
 }
 
 const ANTHROPIC_MODEL = "claude-sonnet-5";
-const GROQ_MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
+const GROQ_MODEL = process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
 const TIMEOUT_MS = 20_000;
 
 export class AiUnavailableError extends Error {
