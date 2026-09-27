@@ -15,21 +15,45 @@ function fixDigits(s: string): { text: string; changed: boolean } {
   return { text, changed: text !== s };
 }
 
+// Where the next field starts on a collapsed line: a known multi-word label, or one capitalized word, then a colon.
+const MULTI_WORD_LABELS = ["Date of birth", "Days supply", "Request channel", "Test MRN", "Recorded directions", "Refills authorized", "Original prescription date", "Refills remaining", "RF REMAIN"];
+const NEXT_LABEL = new RegExp(`\\s+(?=(?:${MULTI_WORD_LABELS.join("|")}|[A-Z][A-Za-z0-9]{0,15})\\s*[:#])`);
+
+// Section headers ("PATIENT INFORMATION") are not values.
+const HEADERISH = /^(information|info|details|data|section)$/i;
+
+// Two passes: first "Label: value" (a colon or #, whole-word label, so "Sig" never matches "Signature"),
+// then "Label value" at the start of a line, as on handwritten forms. A loose value that itself contains a
+// colon is another field, not this one.
 function find(text: string, labels: string[]): { raw: string; value: string } | null {
-  for (const label of labels) {
-    const m = text.match(new RegExp(`(?:^|\\s|\\b)${label}\\s*[:#]?\\s*([^\\n]*?)(?=\\s{2,}|\\n|$)`, "im"));
-    if (m && m[1].trim()) return { raw: m[1], value: m[1].trim() };
+  for (const strict of [true, false]) {
+    for (const label of labels) {
+      const re = strict
+        ? new RegExp(`(?:^|[^A-Za-z])${label}\\s*[:#]\\s*([^\\n]*?)(?=\\s{2,}|\\n|$)`, "im")
+        : new RegExp(`^\\s*${label}\\b\\s+([^\\n]*?)(?=\\s{2,}|\\n|$)`, "im");
+      const m = text.match(re);
+      // OCR often collapses two columns into one line: stop at the next "Label:" ("Linda Nguyen DOB: …").
+      const value = m?.[1].split(NEXT_LABEL)[0].trim();
+      if (!value || HEADERISH.test(value) || (!strict && value.includes(":"))) continue;
+      return { raw: m![1], value };
+    }
   }
   return null;
 }
 
-const unknownish = (v: string) => /^(\?+|n\/?a|not provided|\(not provided\)|unknown|—|-)$/i.test(v.trim());
+const unknownish = (v: string) => /^(\?+|n\/?a|not provided|\(not provided\)|not supplied|not available|none|unknown|—|-)$/i.test(v.trim());
+
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 function hit(value: string | null, confidence: number): Hit {
   return value && !unknownish(value) ? { value, confidence } : { value: null, confidence: 0 };
 }
 
 function parseDob(raw: string): Hit {
+  // "June 30, 1966"
+  const named = raw.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})/);
+  const mi = named ? MONTHS.indexOf(named[1].slice(0, 3).toLowerCase()) : -1;
+  if (named && mi >= 0) return hit(`${named[3]}-${String(mi + 1).padStart(2, "0")}-${named[2].padStart(2, "0")}`, 0.95);
   const { text, changed } = fixDigits(raw);
   const m = text.match(/(\d{1,2})\/(\d{1,2}|\?\?)\/(\d{2,4})/);
   if (!m || m[2] === "??") return hit(null, 0);
@@ -53,7 +77,7 @@ export function extractFaxHeuristic(input: string): Extraction {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const out = Object.fromEntries(EXTRACTION_FIELDS.map((f) => [f, { value: null, confidence: 0 }])) as Record<ExtractionField, Hit>;
 
-  const name = find(text, ["Patient", "PT NAME", "Pt"]);
+  const name = find(text, ["Patient name", "PT NAME", "Patient", "Pt"]);
   if (name) {
     const n = titleName(name.value);
     out.patientName = hit(n.name, n.partial ? 0.45 : n.changed ? 0.7 : 0.95);
@@ -85,7 +109,7 @@ export function extractFaxHeuristic(input: string): Extraction {
     const { text: d, changed } = fixDigits(ds.value);
     out.daysSupply = hit(d.match(/\d+/)?.[0] ?? null, changed ? 0.7 : 0.95);
   }
-  const sig = find(text, ["Sig", "SIG"]);
+  const sig = find(text, ["Sig", "Directions", "Recorded directions"]);
   if (sig) out.sig = hit(sig.value, /\b(PO|BID|TID|QD|T)\b/.test(sig.value) ? 0.8 : 0.93);
 
   const prescriber = find(text, ["Prescriber", "To"]);

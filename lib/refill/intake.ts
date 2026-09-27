@@ -4,6 +4,7 @@ import { db } from "../db";
 import { ehrAdapter } from "../adapters/ehr";
 import { extractFax, summarizeCase } from "../ai/features";
 import { EXTRACTION_FIELDS, LOW_CONFIDENCE, REQUIRED_FIELDS, lowConfidenceFields, missingRequired, overallConfidence, type Extraction, type ExtractionField } from "../ai/schemas";
+import { chartMatches, clearedByChart, type Chart } from "../ai/chartVerify";
 import { loadRefillContext } from "./context";
 import { ownerFor } from "./view";
 import { createRequest, logEvent, retriage, triageRefill, WorkflowError } from "./workflow";
@@ -11,7 +12,7 @@ import { createRequest, logEvent, retriage, triageRefill, WorkflowError } from "
 // Fax / free-text intake (demo step 2): AI extracts → deterministic matching → human confirms
 // anything low-confidence → deterministic triage.
 
-export type StoredExtraction = Extraction & { confirmedFields?: ExtractionField[]; confirmedBy?: string };
+export type StoredExtraction = Extraction & { confirmedFields?: ExtractionField[]; confirmedBy?: string; chartVerifiedFields?: ExtractionField[] };
 
 function splitName(full: string | null): { first: string | null; last: string | null } {
   if (!full) return { first: null, last: null };
@@ -29,13 +30,38 @@ export async function findCandidates(extraction: Extraction) {
   let found = await ehrAdapter.searchPatients({ lastName: last, firstName: first, dob });
   if (!found.length && last) found = await ehrAdapter.searchPatients({ lastName: last }); // looser: DOB may be misread
   const ids = found.map((p) => p.id);
-  const rxs = await db.prescription.findMany({ where: { patientId: { in: ids } }, include: { medication: true } });
+  const rxs = await db.prescription.findMany({ where: { patientId: { in: ids } }, include: { medication: true, prescriber: true, pharmacy: true } });
   return found.map((p) => ({
     ...p,
     prescriptions: rxs
       .filter((r) => r.patientId === p.id)
-      .map((r) => ({ id: r.id, medication: `${r.medication.name} ${r.medication.strength}`, suggested: sameMed(r.medication.name, extraction.medication.value) })),
+      .map((r) => ({
+        id: r.id,
+        medication: `${r.medication.name} ${r.medication.strength}`,
+        suggested: sameMed(r.medication.name, extraction.medication.value),
+        chart: toChart(p, r),
+      })),
   }));
+}
+
+type RxWithChart = { sig: string; medication: { name: string; strength: string }; prescriber: { name: string }; pharmacy: { name: string } };
+
+function toChart(p: { firstName: string; lastName: string; dob: Date }, r: RxWithChart): Chart {
+  return {
+    firstName: p.firstName,
+    lastName: p.lastName,
+    dob: p.dob.toISOString().slice(0, 10),
+    medication: r.medication.name,
+    strength: r.medication.strength,
+    sig: r.sig,
+    prescriber: r.prescriber.name,
+    pharmacy: r.pharmacy.name,
+  };
+}
+
+// Fields that still need a person: low-confidence ones, minus non-identity fields that match the chart.
+function needsReview(e: Extraction, verified: Set<ExtractionField>): ExtractionField[] {
+  return lowConfidenceFields(e).filter((f) => !clearedByChart(f, verified));
 }
 
 export async function intakeFax(user: User, text: string) {
@@ -50,23 +76,32 @@ export async function intakeFax(user: User, text: string) {
     data: { extracted: extraction as unknown as Prisma.InputJsonObject, extractionConfidence: overallConfidence(extraction) },
   });
 
-  // Auto-match only when it's unambiguous: confident name + DOB, one patient, one matching prescription.
-  const identityConfident = (["patientName", "dob"] as const).every((f) => extraction[f].value && extraction[f].confidence >= LOW_CONFIDENCE);
-  const candidates = identityConfident ? await findCandidates(extraction) : [];
+  // Auto-match only when it's unambiguous: one patient, one matching prescription, name + DOB read with
+  // confidence AND matching the chart. Other required fields must be confident or chart-verified.
+  const candidates = extraction.patientName.value ? await findCandidates(extraction) : [];
   const rx = candidates.length === 1 ? candidates[0].prescriptions.filter((p) => p.suggested) : [];
-  // Only identity and required fields block auto-matching; other low-confidence fields stay flagged in the packet.
-  const clean = lowConfidenceFields(extraction).every((f) => !REQUIRED_FIELDS.includes(f)) && missingRequired(extraction).length === 0;
+  const verified = rx.length === 1 ? chartMatches(extraction, rx[0].chart) : new Set<ExtractionField>();
+  const identityOk = (["patientName", "dob"] as const).every((f) => extraction[f].value && extraction[f].confidence >= LOW_CONFIDENCE && verified.has(f));
+  const clean = needsReview(extraction, verified).every((f) => !REQUIRED_FIELDS.includes(f)) && missingRequired(extraction).length === 0;
 
-  if (identityConfident && clean && candidates.length === 1 && rx.length === 1) {
+  if (identityOk && clean && candidates.length === 1 && rx.length === 1) {
+    const stored: StoredExtraction = { ...extraction, chartVerifiedFields: [...verified] };
+    for (const f of verified) if (clearedByChart(f, verified) || extraction[f].confidence >= LOW_CONFIDENCE) stored[f] = { value: extraction[f].value, confidence: 1 };
     await db.refillRequest.update({
       where: { id: refill.id },
-      data: { patientId: candidates[0].id, prescriptionId: rx[0].id, blockers: flagsToBlockers(extraction) },
+      data: {
+        patientId: candidates[0].id,
+        prescriptionId: rx[0].id,
+        blockers: flagsToBlockers(extraction),
+        extracted: stored as unknown as Prisma.InputJsonObject,
+        extractionConfidence: overallConfidence(stored),
+      },
     });
     await logEvent(db, {
       refillRequestId: refill.id,
       actor: { type: "SYSTEM" },
       type: "PATIENT_MATCHED",
-      reason: `Matched to ${candidates[0].firstName} ${candidates[0].lastName} (${candidates[0].mrn}) on exact name + date of birth, and to their ${rx[0].medication} prescription.`,
+      reason: `Matched to ${candidates[0].firstName} ${candidates[0].lastName} (${candidates[0].mrn}) on exact name + date of birth, and to their ${rx[0].medication} prescription.${verified.size ? ` Verified against the chart: ${[...verified].map(fieldName).join(", ")}.` : ""}`,
     });
   }
 
@@ -99,19 +134,26 @@ export async function confirmAndMatch(user: User, input: ConfirmInput) {
   const extraction = refill.extracted as unknown as Extraction | null;
   if (!extraction) throw new WorkflowError("No extracted data to confirm.");
 
-  const mustConfirm = lowConfidenceFields(extraction);
-  const unconfirmed = mustConfirm.filter((f) => !input.confirmedFields.includes(f));
-  if (unconfirmed.length) throw new WorkflowError(`Please confirm the low-confidence fields first: ${unconfirmed.join(", ")}.`);
-
-  const rx = await db.prescription.findUniqueOrThrow({ where: { id: input.prescriptionId } });
+  const rx = await db.prescription.findUniqueOrThrow({ where: { id: input.prescriptionId }, include: { medication: true, prescriber: true, pharmacy: true, patient: true } });
   if (rx.patientId !== input.patientId) throw new WorkflowError("That prescription belongs to a different patient.");
 
+  // Re-checked on the server against the chart; the browser's view is never trusted.
+  const verified = chartMatches(extraction, toChart(rx.patient, rx));
+  const unconfirmed = needsReview(extraction, verified).filter((f) => !input.confirmedFields.includes(f));
+  if (unconfirmed.length) throw new WorkflowError(`Please confirm the low-confidence fields first: ${unconfirmed.map(fieldName).join(", ")}.`);
+
   // Apply human edits; a confirmed field is treated as certain.
-  const updated: StoredExtraction = { ...extraction, confirmedFields: input.confirmedFields, confirmedBy: user.id, doseChangeRequested: input.doseChangeRequested };
+  const updated: StoredExtraction = {
+    ...extraction,
+    confirmedFields: input.confirmedFields,
+    confirmedBy: user.id,
+    chartVerifiedFields: [...verified],
+    doseChangeRequested: input.doseChangeRequested,
+  };
   for (const f of EXTRACTION_FIELDS) {
     const edited = input.values[f];
     const value = edited === undefined ? extraction[f].value : edited?.trim() || null;
-    const confirmed = input.confirmedFields.includes(f) || edited !== undefined;
+    const confirmed = input.confirmedFields.includes(f) || edited !== undefined || (edited === undefined && clearedByChart(f, verified));
     updated[f] = { value, confidence: value ? (confirmed ? 1 : extraction[f].confidence) : 0 };
   }
 
@@ -126,7 +168,7 @@ export async function confirmAndMatch(user: User, input: ConfirmInput) {
     refillRequestId: refill.id,
     actor: { type: "USER", id: user.id },
     type: "EXTRACTION_CONFIRMED",
-    reason: `${user.name} confirmed ${input.confirmedFields.length ? input.confirmedFields.join(", ") : "the extracted fields"} and matched the request to ${patient.firstName} ${patient.lastName} (${patient.mrn}).`,
+    reason: `${user.name} ${input.confirmedFields.length ? `confirmed ${input.confirmedFields.map(fieldName).join(", ")} and ` : ""}matched the request to ${patient.firstName} ${patient.lastName} (${patient.mrn}).${verified.size ? ` Verified against the chart: ${[...verified].map(fieldName).join(", ")}.` : ""}`,
     metadata: { confirmedFields: input.confirmedFields, edited: Object.keys(input.values) },
   });
 
@@ -146,4 +188,8 @@ export async function summarize(refillId: string) {
     protocolName: ctx.protocol ? `${ctx.protocol.name} v${ctx.protocol.version}` : null,
     owner: ownerFor(ctx.refill.waitingOn, ctx.refill.patient?.primaryProvider.name ?? null),
   });
+}
+
+function fieldName(f: ExtractionField): string {
+  return { patientName: "name", dob: "date of birth", medication: "medication", strength: "strength", quantity: "quantity", daysSupply: "days supply", sig: "directions", pharmacy: "pharmacy", prescriber: "prescriber" }[f];
 }

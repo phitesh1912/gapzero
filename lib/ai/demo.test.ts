@@ -40,6 +40,38 @@ describe("extractFaxHeuristic", () => {
   });
 });
 
+describe("extractFaxHeuristic on an unfamiliar layout", () => {
+  // A structured refill form with section headers, like the one a user tried (synthetic data).
+  const form = `PRESCRIBER INFORMATION
+PCP listed in test record: Dr. Michael Chen
+PATIENT INFORMATION
+Patient name: Linda Nguyen   DOB: June 30, 1966
+MEDICATION INFORMATION
+Medication: Metformin 1000 mg tablet
+Recorded directions: Take 1 tablet by mouth twice daily with meals
+Quantity: Not supplied
+Patient-reported: Out of medication
+Prescriber authorization / signature: NOT PROVIDED`;
+
+  it("splits two columns that OCR collapsed onto one line", () => {
+    const e = extractFaxHeuristic("Patient name: Linda Nguyen DOB: June 30, 1966\nMedication: Metformin 1000 mg tablet Frequency: Twice daily");
+    expect(e.patientName.value).toBe("Linda Nguyen");
+    expect(e.dob.value).toBe("1966-06-30");
+    expect(e.medication.value).toBe("Metformin");
+  });
+
+  it("ignores section headers and 'Signature' and reads the real fields", () => {
+    const e = extractFaxHeuristic(form);
+    expect(e.patientName.value).toBe("Linda Nguyen");
+    expect(e.dob.value).toBe("1966-06-30");
+    expect(e.medication.value).toBe("Metformin");
+    expect(e.strength.value).toBe("1000 mg");
+    expect(e.sig.value).toBe("Take 1 tablet by mouth twice daily with meals");
+    expect(e.quantity.value).toBeNull();
+    expect(e.prescriber.value).toBeNull();
+  });
+});
+
 describe("draftRulesHeuristic", () => {
   it("drafts valid metformin rules from plain English", () => {
     const r = draftRulesHeuristic("Nurses may renew metformin for up to 90 days if the patient was seen in the last 12 months and has an A1C within 3 months.");

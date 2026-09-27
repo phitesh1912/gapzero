@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import clsx from "clsx";
-import { AlertCircle, Sparkles } from "lucide-react";
+import { AlertCircle, BadgeCheck, Sparkles } from "lucide-react";
 import { confirmMatchAction } from "@/app/actions/intake";
 import { EXTRACTION_FIELDS, LOW_CONFIDENCE, REQUIRED_FIELDS, type Extraction, type ExtractionField } from "@/lib/ai/schemas";
+import { chartMatches, clearedByChart, type Chart } from "@/lib/ai/chartVerify";
 import { formatDate } from "@/lib/format";
 import { Badge, Button, Card, CardHeader } from "../ui";
 
@@ -26,7 +27,7 @@ export type Candidate = {
   firstName: string;
   lastName: string;
   dob: Date;
-  prescriptions: { id: string; medication: string; suggested: boolean }[];
+  prescriptions: { id: string; medication: string; suggested: boolean; chart: Chart }[];
 };
 
 export function MatchReview({ refillId, extraction, candidates }: { refillId: string; extraction: Extraction; candidates: Candidate[] }) {
@@ -46,7 +47,11 @@ export function MatchReview({ refillId, extraction, candidates }: { refillId: st
     setRxId(candidates.find((c) => c.id === id)?.prescriptions.find((p) => p.suggested)?.id ?? "");
   };
   const toggle = (f: ExtractionField) => setConfirmed((s) => (s.has(f) ? new Set([...s].filter((x) => x !== f)) : new Set(s).add(f)));
-  const remaining = low.filter((f) => !confirmed.has(f) && values[f] === undefined);
+  // Fields that match the chosen patient's chart are verified; only the rest need a person.
+  const rx = selected?.prescriptions.find((p) => p.id === rxId);
+  const verified = rx ? chartMatches(extraction, rx.chart) : new Set<ExtractionField>();
+  const needsYou = (f: ExtractionField) => low.includes(f) && !clearedByChart(f, verified) && values[f] === undefined;
+  const remaining = low.filter((f) => needsYou(f) && !confirmed.has(f));
 
   const submit = () =>
     start(async () => {
@@ -68,7 +73,7 @@ export function MatchReview({ refillId, extraction, candidates }: { refillId: st
     <Card className="border-violet-200" data-tour="match-review">
       <CardHeader
         title={<span className="inline-flex items-center gap-1.5"><Sparkles className="size-4 text-violet-500" /> Review extraction and match patient</span>}
-        subtitle="AI-extracted fields. Confirm or correct anything below 75% confidence."
+        subtitle="AI-extracted fields, checked against the patient's chart. Confirm or correct anything flagged."
         action={<Badge tone="purple">AI-generated · advisory</Badge>}
       />
       <table className="w-full text-sm">
@@ -78,7 +83,7 @@ export function MatchReview({ refillId, extraction, candidates }: { refillId: st
             const isLow = low.includes(f);
             const pct = Math.round(v.confidence * 100);
             return (
-              <tr key={f} className={clsx("border-b border-border", isLow && !confirmed.has(f) && values[f] === undefined && "bg-amber-50")}>
+              <tr key={f} className={clsx("border-b border-border", needsYou(f) && !confirmed.has(f) && "bg-amber-50")}>
                 <td className="w-36 px-4 py-2 text-xs text-muted">
                   {LABELS[f]}
                   {REQUIRED_FIELDS.includes(f) && <span className="text-red-600"> *</span>}
@@ -96,17 +101,25 @@ export function MatchReview({ refillId, extraction, candidates }: { refillId: st
                   {v.value !== null && (
                     <div className="flex items-center gap-1.5" title={`${pct}% confidence`}>
                       <div className="h-1.5 w-12 overflow-hidden rounded-full bg-slate-200">
-                        <div className={clsx("h-full", isLow ? "bg-amber-500" : "bg-emerald-500")} style={{ width: `${pct}%` }} />
+                        <div className={clsx("h-full", isLow && !clearedByChart(f, verified) ? "bg-amber-500" : "bg-emerald-500")} style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-xs text-muted">{pct}%</span>
                     </div>
                   )}
                 </td>
                 <td className="w-28 px-4 py-2 text-right">
-                  {isLow && values[f] === undefined && (
-                    <label className="inline-flex items-center gap-1 text-xs font-medium text-amber-900">
-                      <input type="checkbox" checked={confirmed.has(f)} onChange={() => toggle(f)} /> Confirm
+                  {needsYou(f) && (
+                    <label className="inline-flex flex-col items-end gap-0.5 text-xs font-medium text-amber-900">
+                      <span className="inline-flex items-center gap-1">
+                        <input type="checkbox" checked={confirmed.has(f)} onChange={() => toggle(f)} /> Confirm
+                      </span>
+                      {verified.has(f) && <span className="font-normal text-emerald-700">matches chart</span>}
                     </label>
+                  )}
+                  {clearedByChart(f, verified) && values[f] === undefined && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700" title="Matches the patient's chart exactly">
+                      <BadgeCheck className="size-3.5" aria-hidden /> Matches chart
+                    </span>
                   )}
                   {values[f] !== undefined && <span className="text-xs text-accent">Edited</span>}
                 </td>
