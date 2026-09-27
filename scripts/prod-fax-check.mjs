@@ -8,8 +8,9 @@ await ctx.addInitScript(() => ["queue", "intake", "refill"].forEach((t) => local
 const page = await ctx.newPage();
 const t0 = Date.now();
 await page.goto(base + "/intake", { waitUntil: "networkidle" });
-await page.getByRole("button", { name: "Messy fax" }).click();
-await page.waitForFunction(() => document.querySelector('[data-tour="fax-text"]')?.value.includes("DELGADO"));
+await page.getByRole("button", { name: /Scanned image/ }).click();
+await page.waitForFunction(() => document.querySelector('[data-tour="fax-text"]')?.value.includes("DELGADO"), null, { timeout: 90000 });
+console.log(`OCR done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 await page.getByRole("button", { name: /Extract and triage/ }).click();
 await page.waitForURL(/\/refills\//, { timeout: 60000 });
 await page.getByText("Review extraction and match patient").waitFor({ timeout: 30000 });
@@ -17,7 +18,8 @@ console.log(`extracted + parked for review in ${((Date.now() - t0) / 1000).toFix
 await page.screenshot({ path: `${out}/fax-review.png`, fullPage: true });
 const confirms = page.getByLabel("Confirm");
 const n = await confirms.count();
-console.log("low-confidence fields to confirm:", n);
+const flagged = await page.locator("tr:has(input[type=checkbox]) td:first-child").allInnerTexts();
+console.log("low-confidence fields to confirm:", n, JSON.stringify(flagged));
 for (let i = 0; i < n; i++) await confirms.nth(i).check();
 const t1 = Date.now();
 await page.getByRole("button", { name: "Confirm and match" }).click();

@@ -124,15 +124,21 @@ export const INTAKE_TOUR: TourStep[] = [
     body: "Pharmacies send refill requests as faxes: scanned, often messy text. Here you drop one in, and GapZero turns it into a structured request.",
   },
   {
-    target: "samples",
-    title: "Try a sample",
-    body: "Three synthetic faxes: a clean one (matches automatically), a messy one (AI flags the garbled name and date of birth), and one missing key details.",
+    target: "upload-drop",
+    title: "Drop in the fax",
+    body: "A PDF, a scanned image or text. Scans are read with OCR right in your browser, so the image never leaves your device; only the text goes on.",
     side: "bottom",
+  },
+  {
+    target: "samples",
+    title: "Or try a sample",
+    body: "Synthetic faxes in every format: a messy scanned image (AI flags the garbled name and date of birth), a clean digital PDF (matches automatically), and a scanned PDF missing key details.",
+    side: "top",
   },
   {
     target: "fax-text",
     title: "The fax text",
-    body: "Paste OCR output or upload a .txt file. Synthetic data only.",
+    body: "What was read from the fax. Check it and fix anything before extracting. Synthetic data only.",
     side: "top",
   },
   {
