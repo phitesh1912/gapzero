@@ -19,6 +19,8 @@ import { RequestDetails } from "@/components/refill/RequestDetails";
 import { JourneyTracker } from "@/components/refill/JourneyTracker";
 import { StatePanel } from "@/components/refill/StatePanel";
 import { MatchReview } from "@/components/intake/MatchReview";
+import { Tour } from "@/components/tour/Tour";
+import { REFILL_TOUR } from "@/lib/tours";
 
 export const metadata: Metadata = { title: "Refill request" };
 
@@ -61,7 +63,7 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
             {packet.runOutDate && <p className="mt-1.5 text-xs text-muted">{(packet.daysLeft ?? 0) <= 0 ? "Ran out" : "Runs out"} {formatDate(packet.runOutDate)}</p>}
           </div>
         </div>
-        <div className="mt-6 border-t border-border pt-5">
+        <div className="mt-6 border-t border-border pt-5" data-tour="journey">
           <JourneyTracker state={packet.state} owner={packet.owner} since={packet.stateSince} />
         </div>
       </Card>
@@ -92,16 +94,16 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
         </div>
 
         <div className="space-y-5">
-          <div className="lg:sticky lg:top-6">
+          <div data-tour="actions">
             <ActionPanel packet={packet} role={user.role} canViewClinical={can(user.role, "VIEW_CLINICAL")} />
           </div>
-          <Card>
+          <Card data-tour="timeline">
             <CardHeader
               title="Timeline"
               subtitle="Every action, who did it, and why"
               action={
                 packet.patient && (
-                  <Link href={`/track/${packet.trackingToken}`} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent hover:bg-teal-100">
+                  <Link data-tour="patient-view" href={`/track/${packet.trackingToken}`} target="_blank" className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent hover:bg-teal-100">
                     Patient view <ExternalLink className="size-3" />
                   </Link>
                 )
@@ -111,6 +113,7 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
           </Card>
         </div>
       </div>
+      <Tour id="refill" steps={REFILL_TOUR} />
     </div>
   );
 }

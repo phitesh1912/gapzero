@@ -9,7 +9,7 @@ export function StatePanel({ e }: { e: Explanation }) {
   const VIcon = v.tone === "ok" ? CircleCheck : v.tone === "bad" ? CircleX : v.tone === "pending" ? Clock3 : CircleDashed;
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden" data-tour="state-panel">
       <div className={clsx("px-5 py-4", e.resolved ? "bg-emerald-50" : "bg-gradient-to-r from-slate-900 to-slate-800 text-white")}>
         <p className={clsx("text-[11px] font-semibold tracking-wider uppercase", e.resolved ? "text-emerald-700" : "text-teal-300")}>Where this refill stands</p>
         <p className={clsx("mt-1 text-lg font-semibold", e.resolved ? "text-emerald-900" : "text-white")}>{e.now}</p>

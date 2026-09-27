@@ -11,6 +11,8 @@ import { STATE_LABELS } from "@/lib/refill/view";
 import { formatDateTime, timeAgo, titleCase } from "@/lib/format";
 import { Badge, Card, CardHeader, EmptyState } from "@/components/ui";
 import { OpsControls, PharmacyToggle } from "@/components/ops/OpsControls";
+import { Tour } from "@/components/tour/Tour";
+import { OPS_TOUR } from "@/lib/tours";
 
 export const metadata: Metadata = { title: "Ops" };
 
@@ -28,10 +30,12 @@ export default async function OpsPage() {
           <h1 className="text-xl font-semibold">Operations</h1>
           <p className="mt-1 text-sm text-muted">Throughput, reliability and integrations. No clinical details on this screen.</p>
         </div>
-        <OpsControls />
+        <div data-tour="ops-controls">
+          <OpsControls />
+        </div>
       </div>
 
-      <section className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white">
+      <section className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white" data-tour="value">
         <p className="text-[11px] font-semibold tracking-wider text-teal-300 uppercase">Value delivered</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Value value={String(m.value.filled)} label="Refills resolved and verified filled" />
@@ -60,7 +64,7 @@ export default async function OpsPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2" data-tour="sends">
           <CardHeader title="Failed, retrying and escalated sends" subtitle="Retries back off exponentially; 3 failures escalate to staff." />
           {m.messages.length === 0 ? (
             <EmptyState title="All sends delivered" />
@@ -94,7 +98,7 @@ export default async function OpsPage() {
           )}
         </Card>
 
-        <Card>
+        <Card data-tour="pharmacies">
           <CardHeader title="Pharmacy connections" subtitle="Mock adapters. Toggle one down to simulate an outage." />
           <ul className="divide-y divide-border">
             {m.pharmacies.map((p) => (
@@ -124,6 +128,7 @@ export default async function OpsPage() {
           ))}
         </ul>
       </Card>
+      <Tour id="ops" steps={OPS_TOUR} />
     </div>
   );
 }

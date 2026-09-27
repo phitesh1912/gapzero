@@ -50,10 +50,10 @@ export function QueueTable({ rows, emptyHint }: { rows: QueueRow[]; emptyHint?: 
         <thead>
           <tr className="border-b border-border text-left text-[11px] tracking-wide text-muted uppercase">
             <th className="py-2.5 pr-4 pl-6 font-medium">Patient</th>
-            <th className="px-4 py-2.5 font-medium">Supply</th>
-            <th className="px-4 py-2.5 font-medium">Status</th>
-            <th className="px-4 py-2.5 font-medium">Why it&apos;s stuck</th>
-            <th className="px-4 py-2.5 font-medium">Ball is with</th>
+            <th className="px-4 py-2.5 font-medium" data-tour="col-supply">Supply</th>
+            <th className="px-4 py-2.5 font-medium" data-tour="col-status">Status</th>
+            <th className="px-4 py-2.5 font-medium" data-tour="col-why">Why it&apos;s stuck</th>
+            <th className="px-4 py-2.5 font-medium" data-tour="col-owner">Ball is with</th>
           </tr>
         </thead>
         <tbody>

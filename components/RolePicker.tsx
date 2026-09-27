@@ -23,13 +23,13 @@ export function RolePicker({ people }: { people: Person[] }) {
   };
 
   return (
-    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {people.map((p) => (
         <button
           key={p.id}
           onClick={() => pick(p)}
           disabled={pending}
-          className="group flex flex-col rounded-2xl bg-white/[0.04] p-5 text-left ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/[0.07] hover:ring-teal-400/40 disabled:opacity-60"
+          className="group flex flex-col rounded-2xl bg-white/[0.05] p-5 text-left ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/[0.09] hover:shadow-[0_0_40px_-12px_rgba(45,212,191,0.6)] hover:ring-teal-300/40 disabled:opacity-60"
         >
           <div className="flex items-center gap-3">
             <Avatar name={p.name} role={p.role} />

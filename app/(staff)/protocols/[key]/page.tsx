@@ -11,6 +11,8 @@ import { formatDate } from "@/lib/format";
 import { Badge, Card, CardHeader } from "@/components/ui";
 import { ProtocolEditor } from "@/components/protocols/ProtocolEditor";
 import { RulesView } from "@/components/protocols/RulesView";
+import { Tour } from "@/components/tour/Tour";
+import { PROTOCOL_TOUR } from "@/lib/tours";
 
 export const metadata: Metadata = { title: "Protocol" };
 
@@ -59,7 +61,7 @@ export default async function ProtocolPage({ params }: PageProps<"/protocols/[ke
           />
         </div>
 
-        <Card className="h-fit">
+        <Card className="h-fit" data-tour="versions">
           <CardHeader title="Version history" subtitle="Signed versions are immutable. Changes create a new version." />
           {versions.length === 0 ? (
             <p className="p-4 text-sm text-muted">No versions yet.</p>
@@ -110,6 +112,7 @@ export default async function ProtocolPage({ params }: PageProps<"/protocols/[ke
           )}
         </Card>
       </div>
+      <Tour id="protocol" steps={PROTOCOL_TOUR} />
     </div>
   );
 }

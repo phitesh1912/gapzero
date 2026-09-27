@@ -16,7 +16,7 @@ export function ProtocolChecks({ protocol, isControlled }: { protocol: Protocol;
   }
   const { evaluation } = protocol;
   return (
-    <Card>
+    <Card data-tour="protocol-checks">
       <CardHeader
         title="Protocol checks"
         subtitle={`${protocol.name} v${protocol.version}${protocol.signedBy ? `, signed by ${protocol.signedBy} on ${formatDate(protocol.signedAt)}` : ""}`}

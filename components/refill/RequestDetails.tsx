@@ -10,7 +10,7 @@ export function RequestDetails({ packet }: { packet: Packet }) {
   return (
     <>
       {c.aiSummary && (
-        <Card className="border-violet-200">
+        <Card className="border-violet-200" data-tour="ai-summary">
           <CardHeader title={<span className="inline-flex items-center gap-1.5"><Sparkles className="size-4 text-violet-500" /> Case summary</span>} action={<span className="flex items-center gap-2"><SummaryButton refillId={packet.id} label="Refresh" /><Badge tone="purple">AI-generated · advisory</Badge></span>} />
           <p className="p-4 text-sm whitespace-pre-line">{c.aiSummary}</p>
         </Card>

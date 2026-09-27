@@ -13,6 +13,8 @@ import { AtRiskBanner } from "@/components/queue/AtRiskBanner";
 import { QueueFilters } from "@/components/queue/QueueFilters";
 import { QueueTable } from "@/components/queue/QueueTable";
 import { buttonClass, Card } from "@/components/ui";
+import { Tour } from "@/components/tour/Tour";
+import { QUEUE_TOUR } from "@/lib/tours";
 
 export const metadata: Metadata = { title: "Refill queue" };
 
@@ -45,13 +47,13 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
           <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">Refill queue</h1>
         </div>
         {can(user.role, "CONFIRM_EXTRACTION") && (
-          <Link href="/intake" className={buttonClass("primary")}>
+          <Link href="/intake" className={buttonClass("primary")} data-tour="upload-fax">
             <Upload className="size-4" /> Upload fax
           </Link>
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-tour="kpis">
         <Kpi label="Out of medication" value={stats.outOfMeds} unit="patients" tone={stats.outOfMeds ? "red" : "neutral"} hint={`${stats.gapDays} gap days so far`} />
         <Kpi label="Run out this week" value={stats.runningOut + atRisk.filter((a) => a.daysLeft <= 7).length} unit="patients" tone="amber" hint={`${atRisk.length} not yet requested`} />
         <Kpi label="Waiting on you" value={stats.needsMe} unit="requests" tone="accent" hint={roleLabel(user.role)} href="/queue?view=mine" />
@@ -61,7 +63,7 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
       <AtRiskBanner items={atRisk} canCreate={can(user.role, "CREATE_PROACTIVE")} />
 
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 pt-2">
+        <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 pt-2" data-tour="tabs">
           <Tab href="/queue" active={view === "all"} count={stats.open}>All open</Tab>
           <Tab href="/queue?view=mine" active={view === "mine"} count={stats.needsMe} accent>Needs me</Tab>
           <Tab href="/queue?view=closed" active={view === "closed"}>Closed</Tab>
@@ -73,6 +75,7 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
         {view !== "closed" && <QueueFilters current={{ state: filters.state, blocker: filters.blocker, waitingOn: filters.waitingOn }} showBlockers={clinical} />}
         <QueueTable rows={rows} emptyHint={view === "mine" ? "Nothing is waiting on you. Nice." : undefined} />
       </Card>
+      <Tour id="queue" steps={QUEUE_TOUR} />
     </div>
   );
 }

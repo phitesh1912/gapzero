@@ -17,7 +17,7 @@ export function RoleSwitcher({ current, users, variant = "light" }: { current: s
 
   if (variant === "dark") {
     return (
-      <label className={clsx("relative flex cursor-pointer items-center gap-3 rounded-lg bg-white/5 p-2.5 ring-1 ring-white/10 hover:bg-white/10", pending && "opacity-60")}>
+      <label data-tour="role-switcher" className={clsx("relative flex cursor-pointer items-center gap-3 rounded-lg bg-white/5 p-2.5 ring-1 ring-white/10 hover:bg-white/10", pending && "opacity-60")}>
         {me && <Avatar name={me.name} role={me.role} />}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-white">{me?.name}</span>
@@ -37,6 +37,7 @@ export function RoleSwitcher({ current, users, variant = "light" }: { current: s
 
   return (
     <select
+      data-tour="role-switcher"
       aria-label="Signed in as"
       className="h-9 max-w-44 rounded-md border border-border bg-surface px-2 text-sm disabled:opacity-60"
       value={current}

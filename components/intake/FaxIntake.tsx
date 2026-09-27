@@ -42,7 +42,7 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
 
   return (
     <Card className="space-y-4 p-5">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2" data-tour="samples">
         <span className="text-sm text-muted">Try a sample:</span>
         {SAMPLES.map((s) => (
           <Button key={s.file} size="sm" onClick={() => loadSample(s.file)} disabled={pending}>
@@ -55,6 +55,7 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
         </label>
       </div>
       <textarea
+        data-tour="fax-text"
         className="h-72 w-full rounded-md border border-border bg-slate-50 p-3 font-mono text-xs"
         placeholder="Paste the fax text here (OCR output), or load a sample above."
         value={text}
@@ -62,7 +63,7 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
         aria-label="Fax text"
       />
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="primary" onClick={submit} disabled={pending || text.trim().length < 20}>
+        <Button variant="primary" onClick={submit} disabled={pending || text.trim().length < 20} data-tour="extract">
           <Sparkles className="size-4" /> {pending ? "Extracting…" : "Extract and triage"}
         </Button>
         <Badge tone="purple">AI: {PROVIDER_LABEL[provider]}</Badge>

@@ -85,7 +85,7 @@ export function ProtocolEditor({ protocolKey, initial, draft, nextVersion, canSi
 
   return (
     <div className="space-y-5">
-      <Card>
+      <Card data-tour="plain-english">
         <CardHeader
           title="1. Describe the protocol in plain English"
           subtitle={draft ? `Editing draft v${draft.version}` : `Changes will create draft v${nextVersion}`}
@@ -100,7 +100,7 @@ export function ProtocolEditor({ protocolKey, initial, draft, nextVersion, canSi
             aria-label="Plain-English protocol"
           />
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="primary" onClick={aiDraft} disabled={pending || text.trim().length < 10}>
+            <Button variant="primary" onClick={aiDraft} disabled={pending || text.trim().length < 10} data-tour="ai-draft">
               <Sparkles className="size-4" /> {pending ? "Working…" : "Draft rules with AI"}
             </Button>
             {!rules && (
@@ -114,7 +114,7 @@ export function ProtocolEditor({ protocolKey, initial, draft, nextVersion, canSi
       </Card>
 
       {rules && (
-        <Card className={draftedBy === "AI" ? "border-violet-200" : undefined}>
+        <Card className={draftedBy === "AI" ? "border-violet-200" : undefined} data-tour="rules">
           <CardHeader
             title="2. Review the structured rules"
             subtitle="These are what the engine evaluates. Edit anything the AI got wrong."
@@ -175,7 +175,7 @@ export function ProtocolEditor({ protocolKey, initial, draft, nextVersion, canSi
       )}
 
       {rules && (
-        <Card>
+        <Card data-tour="sign">
           <CardHeader title="3. Save and sign" subtitle="Drafts never route requests. Only a provider can sign." />
           <div className="flex flex-wrap items-center gap-3 p-4">
             <Button onClick={save} disabled={pending || !dirty || name.trim().length < 3}>

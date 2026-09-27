@@ -65,7 +65,7 @@ export function MatchReview({ refillId, extraction, candidates }: { refillId: st
     });
 
   return (
-    <Card className="border-violet-200">
+    <Card className="border-violet-200" data-tour="match-review">
       <CardHeader
         title={<span className="inline-flex items-center gap-1.5"><Sparkles className="size-4 text-violet-500" /> Review extraction and match patient</span>}
         subtitle="AI-extracted fields. Confirm or correct anything below 75% confidence."

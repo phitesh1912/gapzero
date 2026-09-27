@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { activeProvider } from "@/lib/ai/client";
 import { FaxIntake } from "@/components/intake/FaxIntake";
+import { Tour } from "@/components/tour/Tour";
+import { INTAKE_TOUR } from "@/lib/tours";
 
 export const metadata: Metadata = { title: "Upload fax" };
 
@@ -19,6 +21,7 @@ export default async function IntakePage() {
         </p>
       </div>
       <FaxIntake provider={activeProvider()} />
+      <Tour id="intake" steps={INTAKE_TOUR} />
     </div>
   );
 }

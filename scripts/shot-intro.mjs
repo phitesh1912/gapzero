@@ -1,0 +1,15 @@
+import { chromium } from "playwright";
+const [,, base, outDir] = process.argv;
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+await page.goto(base + "/?intro=1", { waitUntil: "networkidle" });
+await page.waitForTimeout(1800);
+await page.screenshot({ path: `${outDir}/intro1.png` });
+await page.getByRole("button", { name: /How GapZero fixes it/ }).click();
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${outDir}/intro2.png` });
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${outDir}/intro2-mobile.png`, fullPage: true });
+await browser.close();
+console.log("ok");

@@ -28,7 +28,7 @@ export function AtRiskBanner({ items, canCreate }: { items: AtRiskItem[]; canCre
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-amber-50 to-orange-50" aria-label="Refills at risk">
+    <section className="overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-amber-50 to-orange-50" aria-label="Refills at risk" data-tour="prevention">
       <div className="flex flex-wrap items-start gap-3 px-5 pt-4 pb-3">
         <span className="grid size-9 place-items-center rounded-lg bg-amber-500 text-white shadow-sm">
           <ShieldCheck className="size-5" aria-hidden />
