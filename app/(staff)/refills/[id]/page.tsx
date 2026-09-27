@@ -85,8 +85,8 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
           {c ? (
             <>
               <RequestDetails packet={packet} />
-              {!packet.explanation.resolved && <ProtocolChecks protocol={c.protocol} isControlled={c.isControlled} />}
-              <ClinicalDetails clinical={c} />
+              {packet.patient && !packet.explanation.resolved && <ProtocolChecks protocol={c.protocol} isControlled={c.isControlled} />}
+              {packet.patient && <ClinicalDetails clinical={c} />}
             </>
           ) : (
             <Card className="p-5 text-sm text-muted">Clinical details (medication, labs, protocol checks) are only visible to nurses and providers.</Card>

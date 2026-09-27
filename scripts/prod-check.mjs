@@ -1,0 +1,17 @@
+import { chromium } from "playwright";
+const [,, out] = process.argv;
+const b = await chromium.launch();
+const page = await b.newPage({ viewport: { width: 1440, height: 900 } });
+await page.goto("https://gapzero-rose.vercel.app/", { waitUntil: "networkidle" });
+await page.waitForTimeout(2000);
+await page.screenshot({ path: `${out}/prod-intro.png` });
+await page.getByRole("button", { name: /How GapZero fixes it/ }).click();
+await page.getByRole("button", { name: /Enter the command center/ }).click();
+await page.waitForURL("https://gapzero-rose.vercel.app/", { timeout: 15000 });
+await page.getByText("Choose who you are").waitFor({ timeout: 15000 });
+await page.getByRole("button", { name: /Continue as refill nurse/ }).click();
+await page.waitForURL(/\/queue/, { timeout: 15000 });
+await page.locator(".driver-popover").waitFor({ timeout: 15000 });
+await page.screenshot({ path: `${out}/prod-tour.png` });
+console.log("flow ok:", page.url());
+await b.close();
