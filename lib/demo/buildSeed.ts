@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import type { DecisionAction, LabTest, Prisma, PrismaClient, RefillState } from "@prisma/client";
 import { evaluate } from "../rules/evaluate";
 import { computeFacts } from "../rules/facts";
@@ -6,6 +5,7 @@ import { rulesSchema } from "../rules/types";
 import { detectBlockers } from "../refill/blockers";
 import { DEFAULT_WAITING_ON, canTransition } from "../refill/states";
 import { route, type ProtocolMatch } from "../refill/triage";
+import { newTrackingToken } from "../refill/token";
 import {
   MEDICATIONS,
   NURSE_IDS,
@@ -47,10 +47,6 @@ const DECISION_FOR: Partial<Record<RefillState, DecisionAction>> = {
   WAITING_LABS: "REQUEST_LABS",
   WAITING_VISIT: "REQUIRE_VISIT",
 };
-
-export function newTrackingToken(): string {
-  return randomBytes(18).toString("base64url");
-}
 
 // Builds every demo row in memory, relative to `today`. Pure apart from random tracking tokens.
 export function buildSeed(today: Date): SeedRows {
