@@ -186,7 +186,7 @@ export const PATIENTS: PatientSpec[] = [
   // At risk #3 and the "clean fax" demo patient.
   {
     first: "George", last: "Miller", dob: "1948-02-14", visitDaysAgo: 60, labs: { BMP: 60, LIPID: 60 },
-    rx: [{ med: "AMLODIPINE", daysLeft: 8, refills: 0, pharmacy: "phm_river" }],
+    rx: [{ med: "AMLODIPINE", daysLeft: 7, refills: 0, pharmacy: "phm_river" }],
   },
   {
     first: "Linda", last: "Nguyen", dob: "1966-06-30", visitDaysAgo: 150, labs: { A1C: 90 },

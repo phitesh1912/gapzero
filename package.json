@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "smoke": "node --conditions=react-server --env-file=.env --import tsx scripts/smoke.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
