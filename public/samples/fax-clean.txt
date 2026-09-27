@@ -1,0 +1,22 @@
+RIVERSIDE DRUG                              NCPDP 0000002
+Fax: (555) 010-2200                         Phone: (555) 010-2201
+
+            PRESCRIPTION RENEWAL REQUEST
+
+Date:        [today]
+To:          Dr. Laura Bennett
+
+Patient:     George Miller
+DOB:         02/14/1948
+Phone:       555-0103
+
+Medication:  Amlodipine 5 mg tablet
+Sig:         Take 1 tablet by mouth once daily
+Quantity:    90
+Days supply: 90
+Refills remaining on file: 0
+
+Last filled: 82 days ago
+
+Please approve or deny and return by fax.
+SYNTHETIC DEMO DOCUMENT - NOT A REAL PATIENT

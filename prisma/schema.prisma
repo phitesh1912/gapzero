@@ -1,0 +1,283 @@
+// GapZero data model. See CLAUDE.md section 5.
+// Synthetic data only: no real patient data anywhere.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  PROVIDER
+  NURSE
+  FRONT_DESK
+  ADMIN
+}
+
+enum LabTest {
+  A1C
+  BMP
+  LIPID
+  TSH
+}
+
+enum PharmacyStatus {
+  UP
+  DOWN
+}
+
+enum RefillSource {
+  ERX_RENEWAL
+  FAX
+  PORTAL
+  PHONE
+  PROACTIVE
+}
+
+enum RefillState {
+  RECEIVED
+  NEEDS_MATCH
+  WAITING_INFO
+  WAITING_PRIOR_AUTH
+  READY_FOR_COSIGN
+  READY_FOR_PROVIDER
+  APPROVED
+  DENIED
+  WAITING_VISIT
+  WAITING_LABS
+  SENT_TO_PHARMACY
+  SEND_FAILED
+  PHARMACY_CONFIRMED
+  FILLED
+  CLOSED
+}
+
+enum WaitingOn {
+  PROVIDER
+  NURSE
+  PHARMACY
+  PATIENT
+  PAYER
+  SYSTEM
+  NONE
+}
+
+enum ProtocolStatus {
+  DRAFT
+  SIGNED
+  RETIRED
+}
+
+enum DecisionAction {
+  APPROVE
+  APPROVE_BRIDGE
+  DENY
+  REQUIRE_VISIT
+  REQUEST_LABS
+}
+
+enum Channel {
+  ERX
+  SMS
+  FAX
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  FAILED
+  ESCALATED
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  AI
+}
+
+model User {
+  id   String @id @default(cuid())
+  name String
+  role Role
+
+  patients         Patient[]      @relation("PrimaryProvider")
+  prescriptions    Prescription[]
+  decisions        Decision[]
+  protocolsCreated Protocol[]     @relation("ProtocolCreatedBy")
+  protocolsSigned  Protocol[]     @relation("ProtocolSignedBy")
+}
+
+model Patient {
+  id                String    @id @default(cuid())
+  mrn               String    @unique
+  firstName         String
+  lastName          String
+  dob               DateTime
+  phone             String
+  primaryProviderId String
+  lastVisitAt       DateTime?
+
+  primaryProvider User            @relation("PrimaryProvider", fields: [primaryProviderId], references: [id])
+  prescriptions   Prescription[]
+  labResults      LabResult[]
+  refillRequests  RefillRequest[]
+}
+
+model Medication {
+  id           String  @id @default(cuid())
+  name         String
+  strength     String
+  drugClass    String
+  isControlled Boolean @default(false)
+  schedule     String?
+
+  prescriptions Prescription[]
+}
+
+model Prescription {
+  id               String   @id @default(cuid())
+  patientId        String
+  medicationId     String
+  prescriberId     String
+  pharmacyId       String
+  sig              String
+  quantity         Int
+  daysSupply       Int
+  refillsRemaining Int
+  writtenAt        DateTime
+  expiresAt        DateTime
+  lastFillAt       DateTime
+
+  patient        Patient         @relation(fields: [patientId], references: [id])
+  medication     Medication      @relation(fields: [medicationId], references: [id])
+  prescriber     User            @relation(fields: [prescriberId], references: [id])
+  pharmacy       Pharmacy        @relation(fields: [pharmacyId], references: [id])
+  refillRequests RefillRequest[]
+}
+
+model LabResult {
+  id         String   @id @default(cuid())
+  patientId  String
+  testCode   LabTest
+  value      Float
+  unit       String
+  resultedAt DateTime
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([patientId, testCode])
+}
+
+model Pharmacy {
+  id      String         @id @default(cuid())
+  name    String
+  ncpdpId String         @unique
+  status  PharmacyStatus @default(UP)
+
+  prescriptions Prescription[]
+}
+
+model RefillRequest {
+  id                   String       @id @default(cuid())
+  patientId            String?
+  prescriptionId       String?
+  source               RefillSource
+  rawText              String?
+  documentUrl          String?
+  extracted            Json?
+  extractionConfidence Float?
+  state                RefillState  @default(RECEIVED)
+  blockers             String[]
+  waitingOn            WaitingOn    @default(SYSTEM)
+  protocolId           String?
+  protocolVersion      Int?
+  aiSummary            String?
+  trackingToken        String       @unique
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  closedAt             DateTime?
+
+  patient          Patient?          @relation(fields: [patientId], references: [id])
+  prescription     Prescription?     @relation(fields: [prescriptionId], references: [id])
+  protocol         Protocol?         @relation(fields: [protocolId], references: [id])
+  decisions        Decision[]
+  outboundMessages OutboundMessage[]
+  events           Event[]
+
+  @@index([state])
+}
+
+model Protocol {
+  id           String         @id @default(cuid())
+  key          String
+  name         String
+  version      Int
+  plainEnglish String
+  rules        Json
+  status       ProtocolStatus @default(DRAFT)
+  createdById  String
+  signedById   String?
+  signedAt     DateTime?
+  createdAt    DateTime       @default(now())
+
+  createdBy      User            @relation("ProtocolCreatedBy", fields: [createdById], references: [id])
+  signedBy       User?           @relation("ProtocolSignedBy", fields: [signedById], references: [id])
+  refillRequests RefillRequest[]
+
+  @@unique([key, version])
+}
+
+model Decision {
+  id              String         @id @default(cuid())
+  refillRequestId String
+  decidedById     String
+  action          DecisionAction
+  quantityDays    Int?
+  note            String
+  createdAt       DateTime       @default(now())
+
+  refillRequest RefillRequest @relation(fields: [refillRequestId], references: [id])
+  decidedBy     User          @relation(fields: [decidedById], references: [id])
+}
+
+model OutboundMessage {
+  id              String        @id @default(cuid())
+  refillRequestId String
+  channel         Channel
+  target          String
+  payload         Json
+  status          MessageStatus @default(PENDING)
+  attempts        Int           @default(0)
+  lastError       String?
+  nextRetryAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  refillRequest RefillRequest @relation(fields: [refillRequestId], references: [id])
+
+  @@index([status, nextRetryAt])
+}
+
+// Append-only: never update or delete rows in this table.
+model Event {
+  id              String       @id @default(cuid())
+  refillRequestId String?
+  actorType       ActorType
+  actorId         String?
+  type            String
+  fromState       RefillState?
+  toState         RefillState?
+  reason          String
+  ruleRef         String?
+  metadata        Json         @default("{}")
+  createdAt       DateTime     @default(now())
+
+  refillRequest RefillRequest? @relation(fields: [refillRequestId], references: [id])
+
+  @@index([refillRequestId, createdAt])
+}

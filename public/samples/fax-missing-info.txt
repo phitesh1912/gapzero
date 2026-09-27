@@ -1,0 +1,14 @@
+CAREMART PHARMACY #042
+Fax to: Clinic refill line
+
+Refill request
+
+Patient: A. Patel
+DOB: (not provided)
+
+Medication: levothyroxine
+Strength: ?
+Qty: ?
+
+Pt requesting refill. Please send new Rx.
+SYNTHETIC DEMO DOCUMENT - NOT A REAL PATIENT

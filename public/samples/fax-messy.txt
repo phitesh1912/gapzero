@@ -1,0 +1,14 @@
+M A I N  S T R E E T  P H A R M A C Y       pg 1/1
+~~ REFILL AUTH REQ ~~        Fx# 555-01O-3300
+
+PT NAME: DELGADO, R0SA         D0B: O4/12/61
+RX: METF0RMIN HCL 1OOO MG TAB    Q: 18O  DS: 9O
+SIG: 1 T PO BID W/ MEALS
+LAST FIL: ~84 days  RF REMAIN: 0
+PRESCRIBER: Dr. A. Rao  (NPI on file)
+
+pt states "almost out, 6 left"   -- pls advise ASAP
+[smudged]  ....ins may req ... ???  .....
+
+RPh: J.T.   callback x204
+SYNTHETIC DEMO DOCUMENT - NOT A REAL PATIENT
