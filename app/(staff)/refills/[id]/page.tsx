@@ -14,6 +14,9 @@ import { ProtocolChecks } from "@/components/refill/ProtocolChecks";
 import { ClinicalDetails } from "@/components/refill/ClinicalDetails";
 import { ActionPanel } from "@/components/refill/ActionPanel";
 import { RequestDetails } from "@/components/refill/RequestDetails";
+import { MatchReview } from "@/components/intake/MatchReview";
+import { extractionSchema } from "@/lib/ai/schemas";
+import { findCandidates } from "@/lib/refill/intake";
 
 export const metadata: Metadata = { title: "Refill request" };
 
@@ -23,6 +26,8 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
   const packet = await getPacket(user, id);
   if (!packet) notFound();
   const c = packet.clinical;
+  const extraction = c && packet.state === "NEEDS_MATCH" ? extractionSchema.safeParse(c.extracted) : null;
+  const candidates = extraction?.success ? await findCandidates(extraction.data) : [];
 
   return (
     <div className="space-y-5">
@@ -72,6 +77,7 @@ export default async function RefillPage({ params }: PageProps<"/refills/[id]">)
         <div className="space-y-5 lg:col-span-2">
           {c ? (
             <>
+              {extraction?.success && <MatchReview refillId={packet.id} extraction={extraction.data} candidates={candidates} />}
               <Card>
                 <CardHeader title="Why it's stuck" subtitle="Blockers found by deterministic checks" />
                 <div className="flex flex-wrap gap-2 p-4">

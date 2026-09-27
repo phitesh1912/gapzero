@@ -340,17 +340,15 @@ export const PATIENTS: PatientSpec[] = [
 ];
 
 // Requests that couldn't be matched to a patient record.
-export const UNMATCHED_REQUESTS: { source: RefillSource; ageDays: number; rawText: string; extracted: Record<string, string | number | null> }[] = [
+export const UNMATCHED_REQUESTS: { source: RefillSource; ageDays: number; rawText: string }[] = [
   {
     source: "FAX",
     ageDays: 0.7,
     rawText: "REFILL AUTH REQUEST -- Pt: J. Smyth  DOB 03/??/1970  Lisinopril 20mg #90  Prescriber: Dr Rao  From: Riverside Drug",
-    extracted: { patientName: "J. Smyth", dob: null, medication: "Lisinopril 20 mg", quantity: 90 },
   },
   {
     source: "PORTAL",
     ageDays: 1.6,
     rawText: "hi this is Maria, i need a refill on my blood pressure pill, the white one. thank you",
-    extracted: { patientName: "Maria", dob: null, medication: null, quantity: null },
   },
 ];

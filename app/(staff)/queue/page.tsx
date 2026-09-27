@@ -8,7 +8,9 @@ import { STATE_LABELS } from "@/lib/refill/view";
 import { AtRiskBanner } from "@/components/queue/AtRiskBanner";
 import { QueueFilters } from "@/components/queue/QueueFilters";
 import { QueueTable } from "@/components/queue/QueueTable";
-import { Card } from "@/components/ui";
+import Link from "next/link";
+import { Upload } from "lucide-react";
+import { buttonClass, Card } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Refill queue" };
 
@@ -47,6 +49,11 @@ export default async function QueuePage({ searchParams }: PageProps<"/queue">) {
             )}
           </p>
         </div>
+        {can(user.role, "CONFIRM_EXTRACTION") && (
+          <Link href="/intake" className={buttonClass("primary")}>
+            <Upload className="size-4" /> Upload fax
+          </Link>
+        )}
       </div>
 
       <AtRiskBanner items={atRisk} canCreate={can(user.role, "CREATE_PROACTIVE")} />

@@ -93,6 +93,7 @@ export async function createRequest(
     blockers?: string[];
   },
   actor: Actor,
+  { triage = true }: { triage?: boolean } = {},
 ) {
   const refill = await db.$transaction(async (tx) => {
     const created = await tx.refillRequest.create({
@@ -120,7 +121,7 @@ export async function createRequest(
     });
     return created;
   });
-  await triageRefill(refill.id, SYSTEM);
+  if (triage) await triageRefill(refill.id, SYSTEM);
   return refill;
 }
 

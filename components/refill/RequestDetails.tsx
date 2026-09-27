@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import type { Packet } from "@/lib/refill/queries";
 import { titleCase } from "@/lib/format";
 import { Badge, Card, CardHeader } from "../ui";
+import { SummaryButton } from "./SummaryButton";
 
 export function RequestDetails({ packet }: { packet: Packet }) {
   const c = packet.clinical;
@@ -10,12 +11,12 @@ export function RequestDetails({ packet }: { packet: Packet }) {
     <>
       {c.aiSummary && (
         <Card className="border-violet-200">
-          <CardHeader title={<span className="inline-flex items-center gap-1.5"><Sparkles className="size-4 text-violet-500" /> Case summary</span>} action={<Badge tone="purple">AI-generated · advisory</Badge>} />
+          <CardHeader title={<span className="inline-flex items-center gap-1.5"><Sparkles className="size-4 text-violet-500" /> Case summary</span>} action={<span className="flex items-center gap-2"><SummaryButton refillId={packet.id} label="Refresh" /><Badge tone="purple">AI-generated · advisory</Badge></span>} />
           <p className="p-4 text-sm whitespace-pre-line">{c.aiSummary}</p>
         </Card>
       )}
       <Card>
-        <CardHeader title="Request" subtitle={`Source: ${titleCase(packet.source)}`} />
+        <CardHeader title="Request" subtitle={`Source: ${titleCase(packet.source)}`} action={!c.aiSummary && <SummaryButton refillId={packet.id} />} />
         <div className="space-y-3 p-4">
           {c.rawText ? (
             <pre className="max-h-48 overflow-auto rounded-md bg-slate-50 p-3 font-mono text-xs whitespace-pre-wrap text-slate-700">{c.rawText}</pre>

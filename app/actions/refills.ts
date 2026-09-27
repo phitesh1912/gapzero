@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { run } from "@/lib/actionResult";
 import { getCurrentUser, requireCapability } from "@/lib/auth/session";
+import { summarize } from "@/lib/refill/intake";
 import {
   createProactiveRequest,
   decide,
@@ -48,6 +49,7 @@ export async function createProactiveAction(prescriptionId: string) {
   return run(async () => {
     const user = await requireCapability("CREATE_PROACTIVE");
     const refill = await createProactiveRequest(id.parse(prescriptionId), user);
+    await summarize(refill.id);
     revalidatePath("/", "layout");
     return { refillId: refill.id };
   });

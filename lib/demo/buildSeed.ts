@@ -1,4 +1,6 @@
 import type { DecisionAction, LabTest, Prisma, PrismaClient, RefillState } from "@prisma/client";
+import { extractFaxHeuristic } from "../ai/demo";
+import { clampConfidence, overallConfidence } from "../ai/schemas";
 import { evaluate } from "../rules/evaluate";
 import { computeFacts } from "../rules/facts";
 import { rulesSchema } from "../rules/types";
@@ -198,7 +200,7 @@ export function buildSeed(today: Date): SeedRows {
       pharmacyId: null,
       medLabel: null,
       labToOrder: null,
-      extracted: u.extracted,
+      extracted: clampConfidence(extractFaxHeuristic(u.rawText)),
     });
   }
 
@@ -220,7 +222,7 @@ export function buildSeed(today: Date): SeedRows {
     pharmacyId: string | null;
     medLabel: string | null;
     labToOrder: string | null;
-    extracted?: Record<string, string | number | null>;
+    extracted?: ReturnType<typeof extractFaxHeuristic>;
   }) {
     const { spec } = a;
     const id = `req_${String(++reqCounter).padStart(2, "0")}`;
@@ -350,8 +352,8 @@ export function buildSeed(today: Date): SeedRows {
       prescriptionId: a.rxId,
       source: spec.source,
       rawText: spec.rawText ?? null,
-      extracted: a.extracted ?? undefined,
-      extractionConfidence: a.extracted ? 0.42 : null,
+      extracted: (a.extracted as unknown as Prisma.InputJsonObject) ?? undefined,
+      extractionConfidence: a.extracted ? overallConfidence(a.extracted) : null,
       state,
       blockers: a.blockers,
       waitingOn,
