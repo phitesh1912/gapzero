@@ -16,7 +16,7 @@ async function shot(name, path, { user, intro = true, height = 900 } = {}) {
   await ctx.close();
   console.log("saved", name);
 }
-await shot("intro", "/?intro=1", { intro: false });
+await shot("intro", "/", { intro: false });
 await shot("queue", "/queue", { user: "usr_nair", height: 1000 });
 await shot("refill-packet", `/refills/${refillId}`, { user: "usr_chen", height: 1000 });
 await shot("ops", "/ops", { user: "usr_ortiz", height: 1000 });

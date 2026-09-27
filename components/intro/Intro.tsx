@@ -21,7 +21,6 @@ import {
   User,
   UserRoundCog,
 } from "lucide-react";
-import { finishIntroAction } from "@/app/actions/session";
 import { Logo } from "../Logo";
 import { Aurora } from "./Aurora";
 
@@ -33,10 +32,8 @@ export function Intro() {
 
   const finish = useCallback(
     () =>
-      start(async () => {
-        await finishIntroAction();
-        router.replace("/");
-        router.refresh();
+      start(() => {
+        router.push("/start");
       }),
     [router],
   );

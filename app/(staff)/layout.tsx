@@ -44,7 +44,7 @@ export default async function StaffLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200/80 bg-gradient-to-b from-teal-50/70 via-white to-white text-slate-600 lg:flex">
-        <Link href="/" className="flex items-center gap-2.5 px-5 pt-6 pb-8">
+        <Link href="/start" className="flex items-center gap-2.5 px-5 pt-6 pb-8">
           <Logo />
           <span>
             <span className="block text-[15px] font-semibold tracking-tight text-slate-900">{BRAND.name}</span>
@@ -68,7 +68,7 @@ export default async function StaffLayout({ children }: LayoutProps<"/">) {
       </aside>
 
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
+        <Link href="/start" className="flex items-center gap-2 font-semibold">
           <Logo size="sm" /> {BRAND.name}
         </Link>
         <nav className="flex items-center gap-1 overflow-x-auto text-sm">{nav}</nav>

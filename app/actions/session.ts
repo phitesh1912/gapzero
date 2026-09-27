@@ -21,8 +21,3 @@ export async function switchUserAction(userId: string) {
     revalidatePath("/", "layout");
   });
 }
-
-// Remembers that this browser has seen the full-screen intro (read by app/page.tsx).
-export async function finishIntroAction() {
-  (await cookies()).set("gz_intro_done", "1", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 });
-}
