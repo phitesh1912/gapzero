@@ -3,24 +3,29 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { FileImage, FileText, FileType2, Loader2, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
-import { intakeFaxAction } from "@/app/actions/intake";
-import { readFax, type ReadResult } from "@/lib/ocr";
+import { Camera, Eye, FileImage, FileType2, Loader2, ShieldAlert, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
+import { intakeFaxAction, transcribeAction } from "@/app/actions/intake";
+import { readFax, toVisionImages } from "@/lib/ocr";
 import { Badge, Button, Card } from "../ui";
 
 const SAMPLES = [
+  { file: "refill-handwritten-photo.jpg", label: "Handwritten form", kind: "Phone photo", icon: Camera },
   { file: "fax-messy-scan.png", label: "Messy fax", kind: "Scanned image", icon: FileImage },
   { file: "fax-clean.pdf", label: "Clean fax", kind: "Digital PDF", icon: FileType2 },
   { file: "fax-missing-info-scan.pdf", label: "Missing info", kind: "Scanned PDF", icon: FileType2 },
-  { file: "fax-messy.txt", label: "Messy fax", kind: "Plain text", icon: FileText },
 ];
 
+const LOW_OCR = 75; // below this, on-device OCR is likely wrong: offer AI vision
+
 const PROVIDER_LABEL = { anthropic: "Claude", groq: "Groq", demo: "Demo mode (rule-based)" } as const;
-const METHOD_LABEL = { text: "Read as plain text", "pdf-text": "Read the PDF's text layer", ocr: "Read with on-device OCR" } as const;
+const METHOD_LABEL = { text: "Read as plain text", "pdf-text": "Read the PDF's text layer", ocr: "Read with on-device OCR", vision: "Read with AI vision" } as const;
+
+type Source = { name: string; method: keyof typeof METHOD_LABEL; pages: number; confidence: number | null };
 
 export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL }) {
   const [text, setText] = useState("");
-  const [source, setSource] = useState<{ name: string; result: ReadResult } | null>(null);
+  const [source, setSource] = useState<Source | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [reading, setReading] = useState<{ label: string; fraction?: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,19 +37,41 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
   const read = async (file: File) => {
     setError(null);
     setSource(null);
+    setFile(file);
     if (file.size > 15_000_000) return setError("That file is over 15 MB. Try a smaller scan.");
     setReading({ label: "Starting" });
     try {
       const result = await readFax(file, (label, fraction) => setReading({ label, fraction }));
       if (!result.text.trim()) throw new Error("No text found in that file. Try a clearer scan.");
       setText(result.text.replace("[today]", new Date().toLocaleDateString()));
-      setSource({ name: file.name, result });
+      setSource({ name: file.name, method: result.method, pages: result.pages, confidence: result.confidence });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't read that file.");
     } finally {
       setReading(null);
     }
   };
+
+  // Explicit, user-triggered: the image goes to the AI provider to be read.
+  const readWithVision = async () => {
+    if (!file) return;
+    setError(null);
+    setReading({ label: "Reading with AI vision" });
+    try {
+      const images = await toVisionImages(file);
+      const res = await transcribeAction(images);
+      if (!res.ok) throw new Error(res.error);
+      setText(res.data.text);
+      setSource({ name: file.name, method: "vision", pages: images.length, confidence: null });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "AI vision couldn't read that file.");
+    } finally {
+      setReading(null);
+    }
+  };
+
+  const lowQuality = source?.method === "ocr" && (source.confidence ?? 100) < LOW_OCR;
+  const canVision = provider !== "demo" && !!file && (file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".pdf"));
 
   const loadSample = async (file: string) => {
     const res = await fetch(`/samples/${file}`);
@@ -92,7 +119,10 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
           <>
             <UploadCloud className="mx-auto size-7 text-accent" aria-hidden />
             <p className="mt-2 text-sm font-medium">Drop a fax here, or <button className="text-accent hover:underline" onClick={() => inputRef.current?.click()}>choose a file</button></p>
-            <p className="mt-1 text-xs text-muted">PDF, scanned image (PNG, JPG) or text. Scans are read with OCR on your device; only the text is sent on.</p>
+            <p className="mt-1 text-xs text-muted">PDF, scan or phone photo (PNG, JPG) or text. Scans are read with OCR on your device; only the text is sent on.</p>
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200">
+              <ShieldAlert className="size-3.5" aria-hidden /> Demo: synthetic documents only. Please don&apos;t upload real patient documents.
+            </p>
             <input
               ref={inputRef}
               type="file"
@@ -110,7 +140,7 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
 
       <div data-tour="samples">
         <p className="mb-2 text-xs font-medium text-muted">Or try a synthetic sample</p>
-        <div className="grid gap-2 sm:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {SAMPLES.map((s) => (
             <button
               key={s.file}
@@ -132,14 +162,33 @@ export function FaxIntake({ provider }: { provider: keyof typeof PROVIDER_LABEL 
         <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-medium text-muted">Fax text (check it, fix anything, then extract)</p>
           {source && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700">
+            <span className={clsx("inline-flex items-center gap-1.5 text-xs", lowQuality ? "text-amber-700" : "text-emerald-700")}>
               <ShieldCheck className="size-3.5" aria-hidden />
-              {METHOD_LABEL[source.result.method]} from {source.name}
-              {source.result.pages > 1 ? ` (${source.result.pages} pages)` : ""}
-              {source.result.confidence !== null ? ` · OCR confidence ${source.result.confidence}%` : ""}
+              {METHOD_LABEL[source.method]} from {source.name}
+              {source.pages > 1 ? ` (${source.pages} pages)` : ""}
+              {source.confidence !== null ? ` · OCR confidence ${source.confidence}%` : ""}
             </span>
           )}
         </div>
+        {lowQuality && (
+          <div className="mb-2 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900" role="alert">
+            <Eye className="size-5 shrink-0" aria-hidden />
+            <p className="min-w-60 flex-1">
+              This one is hard to read on-device (OCR confidence {source?.confidence}%): photos and handwriting often are.
+              {canVision ? " Read it with AI vision instead? The image is sent to the AI provider to be read and isn't stored." : " AI vision needs an AI provider key."}
+            </p>
+            {canVision && (
+              <Button size="sm" variant="primary" onClick={readWithVision} disabled={busy}>
+                <Eye className="size-3.5" /> Read with AI vision
+              </Button>
+            )}
+          </div>
+        )}
+        {!lowQuality && source?.method === "ocr" && canVision && (
+          <button onClick={readWithVision} disabled={busy} className="mb-2 text-xs text-accent hover:underline">
+            Text look wrong? Read it with AI vision instead
+          </button>
+        )}
         <textarea
           data-tour="fax-text"
           className="h-64 w-full rounded-md border border-border bg-slate-50 p-3 font-mono text-xs"

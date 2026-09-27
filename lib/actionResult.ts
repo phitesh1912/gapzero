@@ -1,4 +1,5 @@
 import { AuthError } from "./auth/session";
+import { AiUnavailableError } from "./ai/client";
 import { TransitionError } from "./refill/stateMachine";
 import { WorkflowError } from "./refill/workflow";
 import { ZodError } from "zod";
@@ -17,6 +18,7 @@ export async function run<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
         error: err.code === "CONCURRENT_UPDATE" ? "Someone else just updated this request. Refresh and try again." : err.message,
       };
     }
+    if (err instanceof AiUnavailableError) return { ok: false, error: `AI is unavailable right now (${err.message}). Try again, or fix the text by hand.` };
     if (err instanceof ZodError) return { ok: false, error: "Invalid input." };
     // Log the type only: errors can carry patient details from the DB layer.
     console.error("Action failed:", err instanceof Error ? err.name : typeof err);

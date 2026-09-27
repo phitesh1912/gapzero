@@ -132,13 +132,13 @@ export const INTAKE_TOUR: TourStep[] = [
   {
     target: "samples",
     title: "Or try a sample",
-    body: "Synthetic faxes in every format: a messy scanned image (AI flags the garbled name and date of birth), a clean digital PDF (matches automatically), and a scanned PDF missing key details.",
+    body: "Synthetic documents in every format: a handwritten form photographed on a phone, a messy scanned fax, a clean digital PDF, and a scanned PDF missing key details.",
     side: "top",
   },
   {
     target: "fax-text",
     title: "The fax text",
-    body: "What was read from the fax. Check it and fix anything before extracting. Synthetic data only.",
+    body: "What was read from the document. If on-device OCR struggles (photos, handwriting), you'll be offered AI vision, which reads the image directly. Check the text before extracting.",
     side: "top",
   },
   {

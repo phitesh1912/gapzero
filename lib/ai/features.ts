@@ -6,7 +6,7 @@ import { BLOCKER_LABELS, type Blocker } from "../refill/blockers";
 import { STATE_LABELS } from "../refill/view";
 import { DRUG_CLASSES, FACTS } from "../rules/catalog";
 import { rulesSchema, type ProtocolRules } from "../rules/types";
-import { activeProvider, callStructured, type Provider } from "./client";
+import { activeProvider, callStructured, transcribeImages, type ImageInput, type Provider } from "./client";
 import { calibrate } from "./calibrate";
 import { draftRulesHeuristic, extractFaxHeuristic, summarizeTemplate, type SummaryInput } from "./demo";
 import { clampConfidence, extractionSchema, overallConfidence, rulesDraftSchema, summarySchema, type Extraction } from "./schemas";
@@ -137,6 +137,22 @@ export async function summarizeCase(refillRequestId: string, input: SummaryInput
     fellBack: result.fellBack,
     inputSummary: { state: input.state, blockers: input.blockers },
     output: result.data,
+  });
+  return result;
+}
+
+// ------------------------------------------------------------------------------------------------
+
+// Reads a hard document (photo, handwriting) with AI vision, at the user's explicit request.
+// The image is not stored; the event records only metadata.
+export async function transcribeDocument(images: ImageInput[], userId: string) {
+  const result = await transcribeImages(images);
+  await logAi(null, "AI_TRANSCRIPTION", "AI vision transcribed an uploaded document at a user's request. The image was not stored.", {
+    provider: result.provider,
+    model: result.model,
+    requestedBy: userId,
+    inputSummary: { pages: images.length, bytes: images.reduce((n, i) => n + Math.round((i.base64.length * 3) / 4), 0) },
+    outputSummary: { characters: result.text.length },
   });
   return result;
 }

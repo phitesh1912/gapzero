@@ -80,3 +80,42 @@ async function ocr(images: (File | HTMLCanvasElement)[], onProgress: Progress) {
     await worker.terminate();
   }
 }
+
+// ------------------------------------------------------------------------------------------------
+// For AI vision: shrink the document to at most two JPEG pages of ≤1600 px so the upload stays small.
+
+export type VisionImage = { mediaType: "image/jpeg"; base64: string };
+const MAX_SIDE = 1600;
+
+export async function toVisionImages(file: File): Promise<VisionImage[]> {
+  const name = file.name.toLowerCase();
+  if (file.type === "application/pdf" || name.endsWith(".pdf")) {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const out: VisionImage[] = [];
+    for (let i = 1; i <= Math.min(doc.numPages, 2); i++) {
+      const page = await doc.getPage(i);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: Math.min(2, MAX_SIDE / Math.max(base.width, base.height)) });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({ canvas, viewport }).promise;
+      out.push(canvasToJpeg(canvas));
+    }
+    return out;
+  }
+  if (!file.type.startsWith("image/")) throw new Error("AI vision reads images and PDFs.");
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return [canvasToJpeg(canvas)];
+}
+
+function canvasToJpeg(canvas: HTMLCanvasElement): VisionImage {
+  return { mediaType: "image/jpeg", base64: canvas.toDataURL("image/jpeg", 0.85).split(",")[1] };
+}

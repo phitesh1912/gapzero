@@ -62,7 +62,7 @@ export function extractFaxHeuristic(input: string): Extraction {
   const dob = find(text, ["DOB", "D0B", "Date of birth"]);
   if (dob) out.dob = parseDob(dob.value);
 
-  const med = find(text, ["Medication", "RX", "Drug"]);
+  const med = find(text, ["Medication\\s*&\\s*strength", "Medication", "RX", "Drug"]);
   if (med) {
     const { text: fixed, changed } = fixDigits(med.value);
     const cleanedMed = fixed.replace(/(?<=[A-Za-z])0(?=[A-Za-z])/g, "O");
