@@ -29,24 +29,24 @@ export function RolePicker({ people }: { people: Person[] }) {
           key={p.id}
           onClick={() => pick(p)}
           disabled={pending}
-          className="group flex flex-col rounded-2xl bg-white/[0.05] p-5 text-left ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/[0.09] hover:shadow-[0_0_40px_-12px_rgba(45,212,191,0.6)] hover:ring-teal-300/40 disabled:opacity-60"
+          className="group flex flex-col rounded-2xl bg-white p-5 text-left shadow-sm ring-1 ring-slate-200 transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(13,148,136,0.45)] hover:ring-teal-300 disabled:opacity-60"
         >
           <div className="flex items-center gap-3">
             <Avatar name={p.name} role={p.role} />
             <div>
-              <p className="font-medium text-white">{p.name}</p>
-              <p className="text-xs text-slate-400">{p.title}</p>
+              <p className="font-medium text-slate-900">{p.name}</p>
+              <p className="text-xs text-slate-500">{p.title}</p>
             </div>
           </div>
-          <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-400">
+          <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-600">
             {p.does.map((d) => (
               <li key={d} className="flex gap-2">
-                <span className="mt-2 size-1 shrink-0 rounded-full bg-teal-400" />
+                <span className="mt-2 size-1 shrink-0 rounded-full bg-teal-500" />
                 {d}
               </li>
             ))}
           </ul>
-          <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-teal-300 group-hover:gap-2 transition-all">
+          <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-teal-700 transition-all group-hover:gap-2">
             {busy === p.id ? "Opening…" : `Continue as ${p.title.toLowerCase()}`} <ArrowRight className="size-4" />
           </span>
         </button>

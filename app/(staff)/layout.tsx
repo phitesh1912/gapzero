@@ -43,27 +43,27 @@ export default async function StaffLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-slate-950 text-slate-300 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200/80 bg-gradient-to-b from-teal-50/70 via-white to-white text-slate-600 lg:flex">
         <Link href="/" className="flex items-center gap-2.5 px-5 pt-6 pb-8">
           <Logo />
           <span>
-            <span className="block text-[15px] font-semibold tracking-tight text-white">{BRAND.name}</span>
-            <span className="block text-[11px] text-slate-400">Refill command center</span>
+            <span className="block text-[15px] font-semibold tracking-tight text-slate-900">{BRAND.name}</span>
+            <span className="block text-[11px] text-slate-500">Refill command center</span>
           </span>
         </Link>
         <nav className="flex flex-col gap-0.5 px-3">{nav}</nav>
 
         <div className="mt-auto space-y-3 p-3">
           {stats.outOfMeds > 0 && (
-            <Link href="/queue" className="block rounded-lg bg-red-500/10 px-3 py-2.5 ring-1 ring-red-500/20 hover:bg-red-500/15">
-              <p className="text-[11px] font-medium tracking-wide text-red-300 uppercase">Out of meds now</p>
-              <p className="mt-0.5 text-sm text-white">
+            <Link href="/queue" className="block rounded-xl bg-rose-50 px-3 py-2.5 ring-1 ring-rose-200 transition hover:bg-rose-100/70">
+              <p className="text-[11px] font-medium tracking-wide text-rose-600 uppercase">Out of meds now</p>
+              <p className="mt-0.5 text-sm text-rose-950">
                 {stats.outOfMeds} patients · {stats.gapDays} gap days
               </p>
             </Link>
           )}
-          <RoleSwitcher current={user.id} users={users} variant="dark" />
-          <p className="px-1 text-[11px] leading-snug text-slate-500">Demo sign-in. Production uses SSO + MFA. Synthetic data only.</p>
+          <RoleSwitcher current={user.id} users={users} variant="sidebar" />
+          <p className="px-1 text-[11px] leading-snug text-slate-400">Demo sign-in. Production uses SSO + MFA. Synthetic data only.</p>
         </div>
       </aside>
 

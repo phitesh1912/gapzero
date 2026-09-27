@@ -35,8 +35,8 @@ export default async function OpsPage() {
         </div>
       </div>
 
-      <section className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white" data-tour="value">
-        <p className="text-[11px] font-semibold tracking-wider text-teal-300 uppercase">Value delivered</p>
+      <section className="rounded-xl bg-gradient-to-br from-teal-50 via-cyan-50 to-sky-50 p-5 text-slate-900 ring-1 ring-teal-100" data-tour="value">
+        <p className="text-[11px] font-semibold tracking-wider text-teal-700 uppercase">Value delivered</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Value value={String(m.value.filled)} label="Refills resolved and verified filled" />
           <Value value={m.value.nurseShare === null ? "—" : `${Math.round(m.value.nurseShare * 100)}%`} label="Approvals handled by nurses via signed protocol" />
@@ -137,7 +137,7 @@ function Value({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
-      <p className="mt-1 text-xs leading-snug text-slate-400">{label}</p>
+      <p className="mt-1 text-xs leading-snug text-slate-600">{label}</p>
     </div>
   );
 }

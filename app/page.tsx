@@ -31,25 +31,25 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     .map((u) => ({ id: u.id, name: u.name, role: u.role, ...PERSONAS[u.id] }));
 
   return (
-    <main className="relative min-h-screen overflow-hidden text-slate-100">
+    <main className="relative min-h-screen overflow-hidden text-slate-900">
       <Aurora />
       <div className="relative z-10 mx-auto max-w-6xl px-6 pt-5 pb-16">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Logo size="sm" />
-            <span className="text-lg font-medium tracking-tight text-white">{BRAND.name}</span>
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide text-slate-300 ring-1 ring-white/30">DEMO</span>
+            <span className="text-lg font-medium tracking-tight text-slate-900">{BRAND.name}</span>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide text-slate-500 ring-1 ring-slate-300">DEMO</span>
           </div>
-          <Link href="/?intro=1" className="rounded-full px-4 py-2 text-sm text-slate-200 ring-1 ring-white/20 backdrop-blur hover:bg-white/10">
+          <Link href="/?intro=1" className="rounded-full bg-white/80 px-4 py-2 text-sm text-slate-700 ring-1 ring-slate-200 backdrop-blur hover:bg-white">
             Replay intro
           </Link>
         </header>
 
         <div className="mt-16 text-center">
-          <p className="mx-auto w-fit rounded-full px-3 py-1 text-xs font-medium tracking-[0.18em] text-teal-200 uppercase ring-1 ring-teal-200/30">Refill command center</p>
-          <h1 className="mx-auto mt-6 max-w-4xl text-4xl leading-[1.08] font-light tracking-tight text-white sm:text-6xl">
+          <p className="mx-auto w-fit rounded-full px-3 py-1 text-xs font-medium tracking-[0.18em] bg-teal-50/80 text-teal-700 uppercase ring-1 ring-teal-200">Refill command center</p>
+          <h1 className="mx-auto mt-6 max-w-4xl text-4xl leading-[1.08] font-light tracking-tight text-slate-900 sm:text-6xl">
             Patients never run out of medication{" "}
-            <span className="bg-gradient-to-r from-teal-200 via-cyan-200 to-sky-300 bg-clip-text text-transparent">because of paperwork.</span>
+            <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-sky-600 bg-clip-text text-transparent">because of paperwork.</span>
           </h1>
           <div className="mt-8 flex flex-wrap justify-center gap-2.5 text-sm">
             <Stat value={stats.outOfMeds} label="patients out of meds right now" tone="red" />
@@ -59,7 +59,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </div>
 
         <div className="gz-glass mt-12 rounded-3xl p-5 sm:p-7">
-          <p className="text-center text-sm text-slate-300">Choose who you are. Each role sees and can do different things, enforced on the server.</p>
+          <p className="text-center text-sm text-slate-600">Choose who you are. Each role sees and can do different things, enforced on the server.</p>
           <RolePicker people={people} />
         </div>
 
@@ -76,20 +76,20 @@ export default async function Home({ searchParams }: PageProps<"/">) {
 }
 
 function Stat({ value, label, tone }: { value: number; label: string; tone: "red" | "amber" | "teal" }) {
-  const color = { red: "text-red-300", amber: "text-amber-200", teal: "text-teal-200" }[tone];
+  const color = { red: "text-rose-600", amber: "text-amber-600", teal: "text-teal-600" }[tone];
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-4 py-2 ring-1 ring-white/15 backdrop-blur">
+    <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 shadow-sm ring-1 ring-slate-200 backdrop-blur">
       <span className={`text-base font-semibold tabular-nums ${color}`}>{value}</span>
-      <span className="text-slate-300">{label}</span>
+      <span className="text-slate-600">{label}</span>
     </span>
   );
 }
 
 function Principle({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10 backdrop-blur">
-      <p className="font-medium text-slate-100">{title}</p>
-      <p className="mt-1.5 leading-relaxed text-slate-400">{children}</p>
+    <div className="rounded-2xl bg-white/70 p-5 ring-1 ring-slate-200 backdrop-blur">
+      <p className="font-medium text-slate-900">{title}</p>
+      <p className="mt-1.5 leading-relaxed text-slate-600">{children}</p>
     </div>
   );
 }

@@ -50,10 +50,13 @@ export function Tour({ id, steps, autoStart = true }: { id: string; steps: TourS
       prevBtnText: "Back",
       doneBtnText: "Got it",
       popoverClass: "gz-tour",
-      stagePadding: 6,
-      stageRadius: 12,
-      overlayOpacity: 0.6,
+      stagePadding: 8,
+      stageRadius: 14,
+      overlayColor: "#0f172a",
+      overlayOpacity: 0.32,
       smoothScroll: true,
+      animate: true,
+      duration: 550,
       onDestroyed: () => remember(id),
     }).drive();
   }, [id, steps]);
@@ -67,9 +70,9 @@ export function Tour({ id, steps, autoStart = true }: { id: string; steps: TourS
   return (
     <button
       onClick={start}
-      className="fixed right-5 bottom-5 z-40 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-slate-900/20 ring-1 ring-white/10 transition hover:bg-slate-800"
+      className="fixed right-5 bottom-5 z-40 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 text-sm font-medium text-slate-800 shadow-lg shadow-slate-900/10 ring-1 ring-slate-200 backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl"
     >
-      <Compass className="size-4 text-teal-300" aria-hidden /> Show me around
+      <Compass className="size-4 text-teal-600" aria-hidden /> Show me around
     </button>
   );
 }

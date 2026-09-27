@@ -46,73 +46,87 @@ body {
   [class*="animate-"] { animation: none !important; opacity: 1 !important; }
 }
 
-/* In-app walkthrough popovers (driver.js), styled to match GapZero. */
+/* In-app walkthrough popovers (driver.js): light, with a smooth rise-in and a soft glow on the target. */
+:root { --driver-animation-duration: 0.45s; }
 .driver-popover.gz-tour {
-  background: #0f172a;
-  color: #e2e8f0;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 14px;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid rgb(15 23 42 / 0.08);
+  border-radius: 16px;
   padding: 18px 18px 14px;
   max-width: 340px;
-  box-shadow: 0 24px 60px -12px rgb(2 6 23 / 0.55);
+  box-shadow: 0 24px 60px -18px rgb(15 23 42 / 0.28), 0 2px 6px rgb(15 23 42 / 0.06);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
-.gz-tour .driver-popover-title { color: #fff; font-size: 15px; font-weight: 600; line-height: 1.3; font-family: inherit; }
-.gz-tour .driver-popover-description { color: #cbd5e1; font-size: 13.5px; line-height: 1.55; margin-top: 6px; }
+.driver-fade .driver-popover.gz-tour { animation: gz-pop-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.driver-fade .driver-overlay { animation-duration: 0.35s; }
+.driver-active .driver-active-element {
+  box-shadow: 0 0 0 4px rgb(45 212 191 / 0.35), 0 0 32px rgb(45 212 191 / 0.25);
+  border-radius: 12px;
+  transition: box-shadow 0.35s ease;
+}
+@keyframes gz-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.gz-tour .driver-popover-title { color: #0f172a; font-size: 15px; font-weight: 600; line-height: 1.3; font-family: inherit; }
+.gz-tour .driver-popover-description { color: #475569; font-size: 13.5px; line-height: 1.55; margin-top: 6px; }
 .gz-tour .driver-popover-footer { margin-top: 16px; }
 .gz-tour .driver-popover-progress-text { color: #94a3b8; font-size: 12px; }
 .gz-tour .driver-popover-navigation-btns button {
   text-shadow: none; font: inherit; font-size: 13px; line-height: 1;
-  border-radius: 8px; padding: 8px 12px;
-  border: 1px solid rgb(255 255 255 / 0.15); background: transparent; color: #e2e8f0;
+  border-radius: 999px; padding: 8px 14px;
+  border: 1px solid rgb(15 23 42 / 0.12); background: #fff; color: #334155;
+  transition: background 0.2s, border-color 0.2s;
 }
-.gz-tour .driver-popover-navigation-btns button:hover { background: rgb(255 255 255 / 0.08); }
-.gz-tour .driver-popover-navigation-btns .driver-popover-next-btn { background: #2dd4bf; border-color: #2dd4bf; color: #042f2e; font-weight: 600; }
-.gz-tour .driver-popover-navigation-btns .driver-popover-next-btn:hover { background: #5eead4; }
+.gz-tour .driver-popover-navigation-btns button:hover { background: #f8fafc; }
+.gz-tour .driver-popover-navigation-btns .driver-popover-next-btn { background: #0d9488; border-color: #0d9488; color: #fff; font-weight: 600; }
+.gz-tour .driver-popover-navigation-btns .driver-popover-next-btn:hover { background: #0f766e; }
 .gz-tour .driver-popover-close-btn { color: #94a3b8; }
-.gz-tour .driver-popover-close-btn:hover { color: #fff; }
-.gz-tour .driver-popover-arrow-side-left { border-left-color: #0f172a; }
-.gz-tour .driver-popover-arrow-side-right { border-right-color: #0f172a; }
-.gz-tour .driver-popover-arrow-side-top { border-top-color: #0f172a; }
-.gz-tour .driver-popover-arrow-side-bottom { border-bottom-color: #0f172a; }
+.gz-tour .driver-popover-close-btn:hover { color: #0f172a; }
+.gz-tour .driver-popover-arrow-side-left { border-left-color: #fff; }
+.gz-tour .driver-popover-arrow-side-right { border-right-color: #fff; }
+.gz-tour .driver-popover-arrow-side-top { border-top-color: #fff; }
+.gz-tour .driver-popover-arrow-side-bottom { border-bottom-color: #fff; }
 
-/* Dark hero background: dot grid, clinical aurora horizon, heartbeat line. */
+/* Soft hero background: dot grid, pastel horizon glow, heartbeat line. */
+:root { --canvas-soft: #f6faf9; }
 .gz-aurora {
-  position: absolute; left: -25%; right: -25%; bottom: -40%; height: 82%;
-  border-radius: 50%; filter: blur(72px); opacity: 0.72;
-  background: linear-gradient(90deg, #22d3ee 0%, #2dd4bf 18%, #38bdf8 40%, #6366f1 58%, #2dd4bf 78%, #22d3ee 100%);
+  position: absolute; left: -25%; right: -25%; bottom: -38%; height: 80%;
+  border-radius: 50%; filter: blur(80px); opacity: 0.95;
+  background: linear-gradient(90deg, #99f6e4 0%, #a5f3fc 20%, #bae6fd 42%, #c7d2fe 60%, #a7f3d0 80%, #99f6e4 100%);
   background-size: 200% 100%;
   animation: gz-aurora 18s ease-in-out infinite alternate;
 }
 .gz-dome {
   position: absolute; left: 50%; top: -42%; width: 132%; height: 120%;
-  transform: translateX(-50%); border-radius: 50%; background: #000; filter: blur(26px);
+  transform: translateX(-50%); border-radius: 50%; background: var(--canvas-soft); filter: blur(28px);
 }
 .gz-floor {
-  position: absolute; inset-inline: 0; bottom: 0; height: 30%;
-  background: linear-gradient(to top, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.55) 45%, transparent);
+  position: absolute; inset-inline: 0; bottom: 0; height: 26%;
+  background: linear-gradient(to top, rgb(246 250 249 / 0.9), rgb(246 250 249 / 0.4) 50%, transparent);
 }
 .gz-dots {
   position: absolute; inset: 0;
-  background-image: radial-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(15 23 42 / 0.08) 1px, transparent 1px);
   background-size: 18px 18px;
-  mask-image: linear-gradient(to bottom, black 30%, rgb(0 0 0 / 0.55) 75%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 30%, rgb(0 0 0 / 0.5) 75%, transparent 100%);
 }
-.gz-ecg-base { stroke: rgb(153 246 228 / 0.22); }
+.gz-ecg-base { stroke: rgb(13 148 136 / 0.18); }
 .gz-ecg-pulse {
-  stroke: #ccfbf1; stroke-dasharray: 160 1600; stroke-dashoffset: 1760;
-  filter: drop-shadow(0 0 6px rgb(45 212 191 / 0.9));
+  stroke: #14b8a6; stroke-dasharray: 160 1600; stroke-dashoffset: 1760;
+  filter: drop-shadow(0 0 5px rgb(20 184 166 / 0.55));
   animation: gz-ecg 5s linear infinite;
 }
 .gz-glass {
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.03)), rgb(2 6 23 / 0.6);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 30px 80px -30px rgb(0 0 0 / 0.8);
-  border: 1px solid rgb(255 255 255 / 0.12);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.66));
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 24px 60px -28px rgb(15 23 42 / 0.22);
+  border: 1px solid rgb(15 23 42 / 0.07);
 }
 @keyframes gz-aurora { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 @keyframes gz-ecg { to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .gz-aurora, .gz-ecg-pulse { animation: none; }
+  .gz-aurora, .gz-ecg-pulse, .driver-fade .driver-popover.gz-tour { animation: none; }
 }

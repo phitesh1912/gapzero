@@ -10,9 +10,9 @@ export function StatePanel({ e }: { e: Explanation }) {
 
   return (
     <Card className="overflow-hidden" data-tour="state-panel">
-      <div className={clsx("px-5 py-4", e.resolved ? "bg-emerald-50" : "bg-gradient-to-r from-slate-900 to-slate-800 text-white")}>
-        <p className={clsx("text-[11px] font-semibold tracking-wider uppercase", e.resolved ? "text-emerald-700" : "text-teal-300")}>Where this refill stands</p>
-        <p className={clsx("mt-1 text-lg font-semibold", e.resolved ? "text-emerald-900" : "text-white")}>{e.now}</p>
+      <div className={clsx("border-b px-5 py-4", e.resolved ? "border-emerald-100 bg-emerald-50" : "border-teal-100 bg-gradient-to-r from-teal-50 via-cyan-50 to-sky-50")}>
+        <p className={clsx("text-[11px] font-semibold tracking-wider uppercase", e.resolved ? "text-emerald-700" : "text-teal-700")}>Where this refill stands</p>
+        <p className={clsx("mt-1 text-lg font-semibold", e.resolved ? "text-emerald-900" : "text-slate-900")}>{e.now}</p>
       </div>
       <dl className="grid divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0">
         <Cell icon={OctagonAlert} label="What's blocking it" tone={e.blocking.length ? "red" : "muted"}>

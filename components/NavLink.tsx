@@ -33,18 +33,16 @@ export function NavLink({ href, icon, count, highlight, exact, children }: Props
       href={href}
       className={clsx(
         "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors",
-        active ? "bg-white/10 font-medium text-white" : "text-slate-400 hover:bg-white/5 hover:text-slate-100",
-        "max-lg:text-foreground max-lg:hover:bg-slate-100",
-        active && "max-lg:bg-accent-soft max-lg:text-accent",
+        active ? "bg-white font-medium text-teal-800 shadow-sm ring-1 ring-teal-100" : "text-slate-600 hover:bg-white/80 hover:text-slate-900",
       )}
     >
-      <Icon className={clsx("size-4 max-lg:hidden", active ? "text-teal-300" : "text-slate-500 group-hover:text-slate-300")} aria-hidden />
+      <Icon className={clsx("size-4 max-lg:hidden", active ? "text-teal-600" : "text-slate-400 group-hover:text-slate-600")} aria-hidden />
       <span className="flex-1">{children}</span>
       {count !== undefined && count > 0 && (
         <span
           className={clsx(
             "rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
-            highlight ? "bg-teal-400 text-slate-950" : "bg-white/10 text-slate-300 max-lg:bg-slate-100 max-lg:text-slate-600",
+            highlight ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600",
           )}
         >
           {count}

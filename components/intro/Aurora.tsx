@@ -1,7 +1,7 @@
-// Dark hero backdrop: dot grid over a teal/cyan horizon glow, with a heartbeat trace along it.
+// Soft hero backdrop: dot grid over a pastel mint/sky horizon glow, with a heartbeat trace along it.
 export function Aurora() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden bg-black" aria-hidden>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden bg-[var(--canvas-soft)]" aria-hidden>
       <div className="gz-aurora" />
       <div className="gz-dome" />
       <div className="gz-floor" />

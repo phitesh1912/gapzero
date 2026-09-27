@@ -10,20 +10,20 @@ import { Avatar } from "./Avatar";
 
 type U = { id: string; name: string; role: Role };
 
-export function RoleSwitcher({ current, users, variant = "light" }: { current: string; users: U[]; variant?: "light" | "dark" }) {
+export function RoleSwitcher({ current, users, variant = "light" }: { current: string; users: U[]; variant?: "light" | "sidebar" }) {
   const [pending, start] = useTransition();
   const me = users.find((u) => u.id === current);
   const onChange = (id: string) => start(async () => void (await switchUserAction(id)));
 
-  if (variant === "dark") {
+  if (variant === "sidebar") {
     return (
-      <label data-tour="role-switcher" className={clsx("relative flex cursor-pointer items-center gap-3 rounded-lg bg-white/5 p-2.5 ring-1 ring-white/10 hover:bg-white/10", pending && "opacity-60")}>
+      <label data-tour="role-switcher" className={clsx("relative flex cursor-pointer items-center gap-3 rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-slate-200 transition hover:ring-teal-200", pending && "opacity-60")}>
         {me && <Avatar name={me.name} role={me.role} />}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-white">{me?.name}</span>
-          <span className="block text-[11px] text-slate-400">{me ? roleLabel(me.role) : ""} · switch role</span>
+          <span className="block truncate text-sm font-medium text-slate-900">{me?.name}</span>
+          <span className="block text-[11px] text-slate-500">{me ? roleLabel(me.role) : ""} · switch role</span>
         </span>
-        <ChevronsUpDown className="size-4 text-slate-500" aria-hidden />
+        <ChevronsUpDown className="size-4 text-slate-400" aria-hidden />
         <select aria-label="Signed in as" className="absolute inset-0 cursor-pointer opacity-0" value={current} disabled={pending} onChange={(e) => onChange(e.target.value)}>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
